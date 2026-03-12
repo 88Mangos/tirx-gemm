@@ -771,15 +771,39 @@ Total: **100 points**. Each step is graded on correctness, performance (within a
 
 ## Submission
 
-Submit your completed `gemm_kernels.py`. Ensure all 10 steps pass:
+We use the auto-grading feature in **Autolab** to score your submission. Please follow the instructions carefully.
 
-## Run All Tests
+### What is graded
 
-- **Via Modal:**
-  ```bash
-  modal run run_modal.py
-  ```
-- **Local:**
-  ```bash
-  python -m pytest tests/ -xvs
-  ```
+Each step is graded on two criteria:
+
+1. **Correctness** — the kernel output must match cuBLAS reference (within `rtol=1e-3, atol=1e-2`).
+2. **Performance** — the kernel must achieve reasonable TFLOP/s compared to the reference implementation. Kernels significantly slower than the reference will fail the performance check.
+
+### Create submission archive
+
+From your assignment root directory, run:
+
+```bash
+tar cvf handin.tar gemm_kernels.py
+```
+
+You can verify the contents with:
+
+```bash
+tar tvf handin.tar
+```
+
+It should list exactly one file:
+
+```
+-rw-rw-r-- ... gemm_kernels.py
+```
+
+### Submit to Autolab
+
+Go to [Autolab](https://autolab.andrew.cmu.edu/courses/15442-s26/assessments/TIRX-GEMM) and submit `handin.tar`.
+
+You can submit multiple times. The timestamp of each submission is used to determine any late penalties. Make sure your submitted `gemm_kernels.py` is complete, otherwise the autograder may not process your submission properly.
+
+**Any attempt to manipulate or compromise the integrity of the autograder will result in severe penalties.**
