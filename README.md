@@ -4,6 +4,8 @@ In this assignment, you will progressively build a high-performance FP16 GEMM ke
 
 **Prerequisites**: Familiarity with CUDA programming concepts (threads, warps, shared memory, synchronization). No prior experience with TIRX or Blackwell-specific features is required — this tutorial covers everything you need.
 
+Please read the [slides](https://mlsyscourse.org/slides/tirx-gemm/) for the introduction and guidance to TIRX and this assignment.
+
 ---
 
 ## Background: Blackwell GPU Architecture
