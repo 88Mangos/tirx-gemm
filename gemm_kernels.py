@@ -382,15 +382,8 @@ def hgemm_v4(M, N, K):
     BLK_M, BLK_N, BLK_K = 128, 128, 64
     K_TILES = K // BLK_K
 
-    # MMA_N = 128 (Per-Thread Elements): You are right the value is likely 128, but this is because Tx.alloc_local allocates registers per thread. For a 128x128 (BLK_M x BLK_N) tile distributed across a 128-thread warpgroup, each thread holds exactly 128 elements (16,384 total elements / 128 threads = 128).
-
-    # TMEM_LD_N = 8 (TMEM Load Chunk): Your assumption of 128 here is incorrect. The evidence is directly in your code snippet: tmem[:, no*8:no*8+8]. The hardcoded slice size dictates that TMEM_LD_N is exactly 8. Hardware instructions moving data from TMEM to thread registers operate in smaller, fixed column chunks rather than loading all 128 at once to respect register file bandwidth and size limits.
-
-    # EPI_N (Epilogue Tile Size): This dictates the N-dimension chunk size for staging data through Shared Memory (SMEM) during the writeback phase. Instead of allocating a massive BLK_M x BLK_N array in SMEM to feed the final TMA store, EPI_N (e.g., 16, 32, or 64) allows the kernel to pipeline the writeback in smaller vertical slices, drastically reducing SMEM consumption.
-
     TMEM_LD_N, MMA_N = 8, 128 
-
-    EPI_N = 64 # tunable 
+    EPI_N = 128 # Process the entire tile at once to avoid TMA store race conditions
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_N, BLK_K))
@@ -417,8 +410,7 @@ def hgemm_v4(M, N, K):
             pool.move_base_to(1024)
             Asmem = pool.alloc((BLK_M, BLK_K), a_type, layout=A_layout)
             Bsmem = pool.alloc((BLK_N, BLK_K), b_type, layout=B_layout)
-            pool.commit()
-
+            
             # OVERLAP: Reset the base to 1024 so Dsmem reuses Asmem/Bsmem space.
             # 128x128x2 = 32KB. Total SMEM remains ~33KB (under the 48KB limit).
             pool.move_base_to(1024)
@@ -480,17 +472,12 @@ def hgemm_v4(M, N, K):
             Tx.ptx.tcgen05.fence.after_thread_sync()
 
             # ── Writeback: TMEM → Reg → SMEM → TMA store → GMEM ──
-            
-            # Allocate SMEM sized exactly for the Epilogue pipeline chunk
-            TMEM_LD_regview = TileLayout(S[(128, TMEM_LD_N) : (1@axis_tid_in_wg, 1)])
-
             Dreg_f16 = Tx.alloc_local((MMA_N,), d_type)
             
             # TMEM -> Reg Loop (Chunks of 8)
             for no in Tx.unroll(MMA_N // TMEM_LD_N):
                 Dreg = Tx.alloc_local((TMEM_LD_N,), acc_type)
-                Dreg_wg = Dreg.view(128, TMEM_LD_N, layout=TMEM_LD_regview) # Fixed view size
-
+                Dreg_wg = Dreg.view(128, TMEM_LD_N, layout=TMEM_LD_regview)
                 no_st = no * TMEM_LD_N
                 
                 # Stage 1: TMEM → registers
