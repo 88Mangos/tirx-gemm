@@ -74,38 +74,50 @@ def hgemm_v1(M, N, K):
             phase_mma = 0
 
             # Synchronous load: copy A and B tiles from GMEM to SMEM
-            # Hint: use `with Tx.cta():` and `Tx.copy(dst, src)`
+            # using all 128 threads in the CTA
             with Tx.cta():
                 Tx.copy(Asmem[:,:], A[m_st:m_st+BLK_M, 0:BLK_K])
                 Tx.copy(Bsmem[:,:], B[n_st:n_st+BLK_N, 0:BLK_K])
-            Tx.cuda.cta_sync()
-            Tx.ptx.tcgen05.fence.after_thread_sync()
+
+            # SYNC RULE: Threads write SMEM -> MMA reads SMEM
+            Tx.cuda.cta_sync()  # wait for all 128 threads in the CTA to finish
+            Tx.ptx.tcgen05.fence.after_thread_sync()  # make SMEM visible to tensor cores 
 
             # Issue MMA (warp 0 only, elected thread)
-            # Hint: Tx.gemm_async(tmem[...], Asmem[...], Bsmem[...],
-            #          accum=False, dispatch="tcgen05", cta_group=1)
             # Then commit and wait on mma_bar
             if warp_id == 0:
+                # Single thread dispatch: elect one thread in warp 0 to issue MMA instr 
                 with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
                     Tx.gemm_async(tmem[:,:BLK_N], Asmem[:,:], Bsmem[:,:], accum=False, dispatch="tcgen05", cta_group=1)
+                    # Arrival pattern: Tensor core tells hardware to signal mma_bar when done with MMA
                     Tx.ptx.tcgen05.commit(mma_bar.ptr_to([0]), cta_group=1)
+
+            # all threads wait until MMA is done and the queued commits flip the mbarrier phase 
             Tx.ptx.mbarrier.try_wait(mma_bar.ptr_to([0]), phase_mma)
-            Tx.cuda.cta_sync()
-            Tx.ptx.tcgen05.fence.after_thread_sync()
+
+            # SYNC RULE: MMA writes TMEM -> Threads read TMEM
+            Tx.cuda.cta_sync()  # sync all threads to ensure every thread is in the next phase 
+            Tx.ptx.tcgen05.fence.after_thread_sync()  # make TMEM data visible to threads
 
             # Writeback: TMEM → RF → GMEM
-            # Hint: Tx.copy from tmem to Dreg_wg (with warpgroup view),
-            #       Tx.cast to fp16, then Tx.copy to D
+
+            # Allocate local (per-thread) register space for the f32 TMEM results and f16 output.
             Dreg = Tx.alloc_local((BLK_N,), "float32")
             Dreg_f16 = Tx.alloc_local((BLK_N,), "float16")
-            # Pass 128 and BLK_N as separate arguments, not wrapped in [] or ()
+
+            # Apply the Axe Layout: Maps the 128 threads in the warpgroup (axis_tid_in_wg) to the 128 rows of the tile.
+            # NOTE: Pass 128 and BLK_N as separate arguments, not wrapped in [] or ()
             Dreg_wg = Dreg.view(128, BLK_N, layout=TileLayout(S[(128, BLK_N) : (1@axis_tid_in_wg, 1)]))
             
+            # All 128 threads in the warpgroup must cooperate to issue a TMEM read (tcgen05.ld).
             with Tx.warpgroup():
                 Tx.copy(Dreg_wg[:,:], tmem[:,:BLK_N])       # TMEM → registers
                 Tx.cuda.cta_sync()
+            
+            # Switch to independent thread execution for math and global memory writing.
             with Tx.thread():
                 Tx.cast(Dreg_f16[:], Dreg[:])                # f32 → f16
+                # Calculate the exact global matrix row this specific thread is responsible for.
                 row = m_st + warp_id * 32 + lane_id
                 Tx.copy(D[row, n_st:n_st + BLK_N], Dreg_f16[:])
 
