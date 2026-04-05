@@ -29,9 +29,9 @@ def hgemm_v1(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type),
-        B: Tx.Buffer((N, K), b_type),
-        D: Tx.Buffer((M, N), d_type),
+        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
+        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
+        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
     ):
         # fmt: off
         with Tx.kernel():
@@ -137,9 +137,9 @@ def hgemm_v2(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type),
-        B: Tx.Buffer((N, K), b_type),
-        D: Tx.Buffer((M, N), d_type),
+        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
+        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
+        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
     ):
         # fmt: off
         with Tx.kernel():
@@ -205,9 +205,9 @@ def hgemm_v3(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type),
-        B: Tx.Buffer((N, K), b_type),
-        D: Tx.Buffer((M, N), d_type),
+        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
+        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
+        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
     ):
         # fmt: off
         with Tx.kernel():
@@ -240,9 +240,9 @@ def hgemm_v4(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type),
-        B: Tx.Buffer((N, K), b_type),
-        D: Tx.Buffer((M, N), d_type),
+        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
+        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
+        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
     ):
         # fmt: off
         with Tx.kernel():
@@ -324,9 +324,9 @@ def hgemm_v5(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type),
-        B: Tx.Buffer((N, K), b_type),
-        D: Tx.Buffer((M, N), d_type),
+        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
+        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
+        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
     ):
         # fmt: off
         with Tx.kernel():
@@ -365,9 +365,9 @@ def hgemm_v6(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type),
-        B: Tx.Buffer((N, K), b_type),
-        D: Tx.Buffer((M, N), d_type),
+        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
+        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
+        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
     ):
         # fmt: off
         with Tx.kernel():
@@ -412,9 +412,9 @@ def hgemm_v7(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type),
-        B: Tx.Buffer((N, K), b_type),
-        D: Tx.Buffer((M, N), d_type),
+        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
+        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
+        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
     ):
         # fmt: off
         with Tx.kernel():
@@ -464,9 +464,9 @@ def hgemm_v8(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type),
-        B: Tx.Buffer((N, K), b_type),
-        D: Tx.Buffer((M, N), d_type),
+        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
+        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
+        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
     ):
         # fmt: off
         with Tx.kernel():
@@ -508,9 +508,9 @@ def hgemm_v9(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type),
-        B: Tx.Buffer((N, K), b_type),
-        D: Tx.Buffer((M, N), d_type),
+        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
+        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
+        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
     ):
         # fmt: off
         with Tx.kernel():
@@ -557,9 +557,9 @@ def hgemm_v10(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type),
-        B: Tx.Buffer((N, K), b_type),
-        D: Tx.Buffer((M, N), d_type),
+        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
+        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
+        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
     ):
         # fmt: off
         with Tx.kernel():
