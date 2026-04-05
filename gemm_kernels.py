@@ -382,13 +382,12 @@ def hgemm_v4(M, N, K):
     BLK_M, BLK_N, BLK_K = 128, 128, 64
     K_TILES = K // BLK_K
 
-    TMEM_LD_N, MMA_N = 8, 128 
-    EPI_N = 64 # Process the entire tile at once to avoid TMA store race conditions
+    # TMEM_LD_N, MMA_N = 8, 128 
+    # EPI_N = 64 # Process the entire tile at once to avoid TMA store race conditions
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_N, BLK_K))
-    D_layout = tma_shared_layout(d_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, EPI_N))
-    TMEM_LD_regview = TileLayout(S[(128, TMEM_LD_N) : (1@axis_tid_in_wg, 1)])
+    D_layout = tma_shared_layout(d_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, 64))
 
     @Tx.prim_func(tirx=True)
     def kernel(
@@ -407,7 +406,7 @@ def hgemm_v4(M, N, K):
             #   warp_id from 0-3 tells us which of the 4 warps the thread belongs to 
             #   mult by 32 to shift to starting position of the warp given by warp_id
             #   lane_id adds the threads specific position within its assigned warp.
-            thread_id = warp_id * 32 + lane_id
+            thread_id = Tx.meta_var(warp_id * 32 + lane_id)
 
             pool = Tx.PoolAllocator()
             tmem_addr = pool.alloc((1,), "uint32")
@@ -420,7 +419,7 @@ def hgemm_v4(M, N, K):
             # OVERLAP: Reset the base to 1024 so Dsmem reuses Asmem/Bsmem space.
             # 128x128x2 = 32KB. Total SMEM remains ~33KB (under the 48KB limit).
             pool.move_base_to(1024)
-            Dsmem = pool.alloc((BLK_M, EPI_N), d_type, layout=D_layout)
+            Dsmem = pool.alloc((BLK_M, 64), d_type, layout=D_layout)
             pool.commit()
 
             if warp_id == 0:
@@ -433,8 +432,14 @@ def hgemm_v4(M, N, K):
             Tx.ptx.fence.mbarrier_init()
             Tx.cuda.cta_sync()
 
-            tmem = Tx.decl_buffer((128, 512), "float32", scope="tmem", allocated_addr=0,
+            # TMEM_LANES = 128  # HW-specific 
+            # TMEM_COLS = 512 # we allocated n_cols = 512 
+
+            tmem = Tx.decl_buffer((128, 512), acc_type, scope="tmem", allocated_addr=0,
                                   layout=TileLayout(S[(128, 512) : (1@TLane, 1@TCol)]))
+            
+            TMEM_LD_regview = TileLayout(S[(128, 8) : (1@TLane, 1@TCol)])
+            
 
             m_st = Tx.meta_var(bx * BLK_M)
             n_st = Tx.meta_var(by * BLK_N)
@@ -449,8 +454,8 @@ def hgemm_v4(M, N, K):
             def tma_load(k_st):
                 byte_count = (BLK_M * BLK_K + BLK_N * BLK_K) * 2 
 
-                Tx.copy_async(Asmem, A[m_st:m_st+BLK_M, k_st:k_st+BLK_K], dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([0]))
-                Tx.copy_async(Bsmem, B[n_st:n_st+BLK_N, k_st:k_st+BLK_K], dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([0]))
+                Tx.copy_async(Asmem[:, :], A[m_st:m_st+BLK_M, k_st:k_st+BLK_K], dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([0]))
+                Tx.copy_async(Bsmem[:, :], B[n_st:n_st+BLK_N, k_st:k_st+BLK_K], dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([0]))
                 Tx.ptx.mbarrier.arrive.expect_tx(tma_bar.ptr_to([0]), byte_count)
 
             # ── MMA compute: wait for data, run tcgen05, wait for result ──
@@ -476,37 +481,37 @@ def hgemm_v4(M, N, K):
                 for k in range(K_TILES): 
                     tma_load(k*BLK_K)
                     mma(k != 0)
+
+            Tx.cuda.warpgroup_sync(10)
             Tx.ptx.tcgen05.fence.after_thread_sync()
 
             # ── Writeback ──
             # allocate full row fp16 buffer for 128 cols
-            Dreg_f16 = Tx.alloc_local((MMA_N,), d_type)
+            Dreg_f16 = Tx.alloc_local((128,), d_type)
             
             # loop 16 times (128 / 8 = 16)
-            for no in Tx.unroll(MMA_N // TMEM_LD_N):
-                no_st = no * TMEM_LD_N
+            for no in Tx.unroll(128 // 8):
                 
                 # allocate 8-col fp32 tmp register
-                Dreg = Tx.alloc_local((TMEM_LD_N,), acc_type)
-                Dreg_wg = Dreg.view(MMA_N, TMEM_LD_N, layout=TMEM_LD_regview)
-
+                Dreg = Tx.alloc_local((8,), acc_type)
 
                 # warpgroup collective: 128 threads read 8 cols from TMEM
                 with Tx.warpgroup():
-                    Tx.copy(Dreg_wg, tmem[:, no_st:no_st+TMEM_LD_N])
+                    Dreg_wg = Dreg.view(128, 8, layout=TMEM_LD_regview)
+                    Tx.copy(Dreg_wg[:, :], tmem[:, no * 8:no * 8+8])
 
                 ## per-thread cast: fp32 -> fp16
                 with Tx.thread():
-                    Tx.cast(Dreg_f16[no_st:no_st+TMEM_LD_N], Dreg)
+                    Tx.cast(Dreg_f16[no * 8:no * 8+8], Dreg[:])
 
             # loop 2 times (128 / 64) = 2
-            for no in Tx.unroll(MMA_N // EPI_N):
-                epi_st = no * EPI_N
+            for no in Tx.unroll(128 // 64):
+                n_epi_st = Tx.meta_var(n_st + no * 64)
                 
                 # each thread writes its 64-col slice to SMEM
                 with Tx.thread():
                     Tx.copy(Dsmem[thread_id, :],
-                            Dreg_f16[epi_st:epi_st+EPI_N])
+                            Dreg_f16[no * 64:no * 64+64])
                     
                     # make SMEM writes visible to TMA engine
                     Tx.ptx.fence.proxy_async("shared::cta")
@@ -517,7 +522,7 @@ def hgemm_v4(M, N, K):
                 # elect 1 thread to issue TMA store
                 with Tx.thread(parent="warpgroup")[tid == 0]:
                     Tx.copy_async(
-                        D[m_st:m_st+MMA_N, n_st+epi_st : n_st+epi_st+EPI_N], 
+                        D[m_st:m_st+BLK_M, n_epi_st : n_epi_st+64], 
                         Dsmem[:, :], dispatch="tma")
                     
                     # Commit and wait for TMA store completion
