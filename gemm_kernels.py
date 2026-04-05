@@ -419,6 +419,12 @@ def hgemm_v4(M, N, K):
             Bsmem = pool.alloc((BLK_N, BLK_K), b_type, layout=B_layout)
             pool.commit()
 
+            # OVERLAP: Reset the base to 1024 so Dsmem reuses Asmem/Bsmem space.
+            # 128x128x2 = 32KB. Total SMEM remains ~33KB (under the 48KB limit).
+            pool.move_base_to(1024)
+            Dsmem = pool.alloc((BLK_M, EPI_N), d_type, layout=D_layout)
+            pool.commit()
+
             if warp_id == 0:
                 if lane_id == 0:
                     Tx.ptx.mbarrier.init(mma_bar.ptr_to([0]), 1)
@@ -443,12 +449,11 @@ def hgemm_v4(M, N, K):
             # ── TMA async load: GMEM → SMEM (hardware-driven) ──
             @Tx.inline 
             def tma_load(k_st):
-                tma_config = {"dispatch": "tma", "cta_group": 1, "mbar": tma_bar.ptr_to([0])}
                 byte_count = (BLK_M * BLK_K + BLK_N * BLK_K) * 2 
 
-                Tx.copy_async(Asmem, A[m_st:m_st+BLK_M, k_st:k_st+BLK_K], **tma_config)
-                Tx.copy_async(Bsmem, B[n_st:n_st+BLK_N, k_st:k_st+BLK_K], **tma_config)
-                Tx.ptx.mbarrier.arrive.expect_tx(tma_bar, byte_count)
+                Tx.copy_async(Asmem, A[m_st:m_st+BLK_M, k_st:k_st+BLK_K], dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([0]))
+                Tx.copy_async(Bsmem, B[n_st:n_st+BLK_N, k_st:k_st+BLK_K], dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([0]))
+                Tx.ptx.mbarrier.arrive.expect_tx(tma_bar.ptr_to([0]), byte_count)
 
             # ── MMA compute: wait for data, run tcgen05, wait for result ──
             #   1. Waits on tma_bar (data ready)
@@ -456,13 +461,13 @@ def hgemm_v4(M, N, K):
             #   3. Waits on mma_bar (MMA done)
             @Tx.inline
             def mma(accum):
-                Tx.ptx.mbarrier.try_wait(tma_bar, phase_tma)   # wait TMA done
+                Tx.ptx.mbarrier.try_wait(tma_bar.ptr_to([0]), phase_tma)   # wait TMA done
                 phase_tma ^= 1
                 Tx.ptx.tcgen05.fence.after_thread_sync()
                 Tx.gemm_async(tmem[:,:BLK_N], Asmem[:,:], Bsmem[:,:],
                               accum=accum, dispatch="tcgen05", cta_group=1)
-                Tx.ptx.tcgen05.commit(mma_bar, cta_group=1)    # signal MMA done
-                Tx.ptx.mbarrier.try_wait(mma_bar, phase_mma)   # wait MMA done
+                Tx.ptx.tcgen05.commit(mma_bar.ptr_to([0]), cta_group=1)    # signal MMA done
+                Tx.ptx.mbarrier.try_wait(mma_bar.ptr_to([0]), phase_mma)   # wait MMA done
                 phase_mma ^= 1
                 
 
@@ -477,7 +482,6 @@ def hgemm_v4(M, N, K):
             # ── Writeback: TMEM → Reg → SMEM → TMA store → GMEM ──
             
             # Allocate SMEM sized exactly for the Epilogue pipeline chunk
-            Dsmem = Tx.alloc_shared((BLK_M, EPI_N), d_type, layout=D_layout)
             TMEM_LD_regview = TileLayout(S[(128, TMEM_LD_N) : (1@axis_tid_in_wg, 1)])
 
             Dreg_f16 = Tx.alloc_local((MMA_N,), d_type)
@@ -497,25 +501,15 @@ def hgemm_v4(M, N, K):
                 with Tx.thread():
                     Tx.cast(Dreg_f16[no_st:no_st+TMEM_LD_N], Dreg)
         
-            # Reg -> SMEM -> GMEM Loop (Chunks of 64)
-            for no in Tx.unroll(MMA_N // EPI_N):
-                epi_st = no * EPI_N
-                
-                # Stage 3: registers → SMEM (Slice by EPI_N)
-                with Tx.thread():
-                    Tx.copy(Dsmem[tid, :], Dreg_f16[epi_st:epi_st+EPI_N])
-                    Tx.ptx.fence.proxy_async("shared::cta")
-                
-                Tx.cuda.warpgroup_sync(10)
+            # Entire block written at once (no EPI_N loop required)
+            with Tx.thread():
+                Tx.copy(Dsmem[tid, :], Dreg_f16[:])
+                Tx.ptx.fence.proxy_async("shared::cta")
+            
+            Tx.cuda.warpgroup_sync(10)
 
-                # Stage 4: SMEM → GMEM (TMA Store pointing to the correct N-dimension offset)
-                with Tx.thread(parent="warpgroup")[tid == 0]:
-                    Tx.copy_async(
-                        D[m_st:m_st+BLK_M, n_st+epi_st : n_st+epi_st+EPI_N], 
-                        Dsmem, 
-                        dispatch="tma"
-                    )
-
+            with Tx.thread(parent="warpgroup")[tid == 0]:
+                Tx.copy_async(D[m_st:m_st+BLK_M, n_st:n_st+BLK_N], Dsmem, dispatch="tma")
 
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
