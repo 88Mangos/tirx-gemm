@@ -9,6 +9,7 @@ from tvm.tirx.pipeline import PipelineState, MBarrier, TMABar, TCGen05Bar
 SM_COUNT = 148  # B200
 F16_SIZE = 2
 
+# fmt: off
 # ======================================================================
 # Step 1: Single-tile synchronous GEMM
 #   M=128, N=128, K=64 — exactly one tile, no loops.
@@ -72,17 +73,41 @@ def hgemm_v1(M, N, K):
             phase_mma: Tx.int32
             phase_mma = 0
 
-            # TODO: Synchronous load: copy A and B tiles from GMEM to SMEM
+            # Synchronous load: copy A and B tiles from GMEM to SMEM
             # Hint: use `with Tx.cta():` and `Tx.copy(dst, src)`
+            with Tx.cta():
+                Tx.copy(Asmem[:,:], A[m_st:m_st+BLK_M, 0:BLK_K])
+                Tx.copy(Bsmem[:,:], B[n_st:n_st+BLK_N, 0:BLK_K])
+            Tx.cuda.cta_sync()
+            Tx.ptx.tcgen05.fence.after_thread_sync()
 
-            # TODO: Issue MMA (warp 0 only, elected thread)
+            # Issue MMA (warp 0 only, elected thread)
             # Hint: Tx.gemm_async(tmem[...], Asmem[...], Bsmem[...],
             #          accum=False, dispatch="tcgen05", cta_group=1)
             # Then commit and wait on mma_bar
+            if warp_id == 0:
+                with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+                    Tx.gemm_async(tmem[:,:BLK_N], Asmem[:,:], Bsmem[:,:], accum=False, dispatch="tcgen05", cta_group=1)
+                    Tx.ptx.tcgen05.commit(mma_bar.ptr_to([0]), cta_group=1)
+            Tx.ptx.mbarrier.try_wait(mma_bar.ptr_to([0]), phase_mma)
+            Tx.cuda.cta_sync()
+            Tx.ptx.tcgen05.fence.after_thread_sync()
 
-            # TODO: Writeback: TMEM → RF → GMEM
+            # Writeback: TMEM → RF → GMEM
             # Hint: Tx.copy from tmem to Dreg_wg (with warpgroup view),
             #       Tx.cast to fp16, then Tx.copy to D
+            Dreg = Tx.alloc_local((BLK_N,), "float32")
+            Dreg_f16 = Tx.alloc_local((BLK_N,), "float16")
+            # Pass 128 and BLK_N as separate arguments, not wrapped in [] or ()
+            Dreg_wg = Dreg.view(128, BLK_N, layout=TileLayout(S[(128, BLK_N) : (1@axis_tid_in_wg, 1)]))
+            
+            with Tx.warpgroup():
+                Tx.copy(Dreg_wg[:,:], tmem[:,:BLK_N])       # TMEM → registers
+                Tx.cuda.cta_sync()
+            with Tx.thread():
+                Tx.cast(Dreg_f16[:], Dreg[:])                # f32 → f16
+                row = m_st + warp_id * 32 + lane_id
+                Tx.copy(D[row, n_st:n_st + BLK_N], Dreg_f16[:])
 
             # --- TMEM cleanup ---
             if warp_id == 0:
