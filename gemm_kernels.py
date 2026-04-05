@@ -394,8 +394,8 @@ def hgemm_v4(M, N, K):
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_N, BLK_K))
-    D_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_N, BLK_K))
-    TMA_3D_trick_regview = TileLayout(S[(128, BLK_N) : (1@axis_tid_in_wg, 1)])
+    D_layout = tma_shared_layout(d_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, EPI_N))
+    TMEM_LD_regview = TileLayout(S[(128, TMEM_LD_N) : (1@axis_tid_in_wg, 1)])
 
     @Tx.prim_func(tirx=True)
     def kernel(
@@ -475,36 +475,46 @@ def hgemm_v4(M, N, K):
             Tx.ptx.tcgen05.fence.after_thread_sync()
 
             # ── Writeback: TMEM → Reg → SMEM → TMA store → GMEM ──
-            # need Dsmem buffer with same swizzled layout
-            Dsmem = pool.alloc((BLK_M, BLK_N), d_type, layout = D_layout)
+            
+            # Allocate SMEM sized exactly for the Epilogue pipeline chunk
+            Dsmem = Tx.alloc_shared((BLK_M, EPI_N), d_type, layout=D_layout)
+            TMEM_LD_regview = TileLayout(S[(128, TMEM_LD_N) : (1@axis_tid_in_wg, 1)])
 
-            # 4-stage datapath where all threads (across CTAs) participate 
             Dreg_f16 = Tx.alloc_local((MMA_N,), d_type)
+            
+            # TMEM -> Reg Loop (Chunks of 8)
             for no in Tx.unroll(MMA_N // TMEM_LD_N):
-                Dreg = Tx.alloc_local((TMEM_LD_N), acc_type)
-                Dreg_wg = Dreg.view(128, BLK_N, layout=TMA_3D_trick_regview)
+                Dreg = Tx.alloc_local((TMEM_LD_N,), acc_type)
+                Dreg_wg = Dreg.view(128, TMEM_LD_N, layout=TMEM_LD_regview) # Fixed view size
 
-                no_st = no*TMEM_LD_N
+                no_st = no * TMEM_LD_N
                 
-                # Stage 1: copy TMEM into registers (higher-precision f32)
+                # Stage 1: TMEM → registers
                 with Tx.warpgroup():
-                    Tx.copy(Dreg_wg, tmem[:, no_st:no_st+TMEM_LD_N])     # TMEM → registers
+                    Tx.copy(Dreg_wg, tmem[:, no_st:no_st+TMEM_LD_N])
 
-                # Stage 2: cast from accumulator high precision type to lower precision output type
+                # Stage 2: f32 → f16
                 with Tx.thread():
-                    Tx.cast(Dreg_f16[no_st:no_st+TMEM_LD_N], Dreg)     # f32 → f16
+                    Tx.cast(Dreg_f16[no_st:no_st+TMEM_LD_N], Dreg)
         
+            # Reg -> SMEM -> GMEM Loop (Chunks of 64)
             for no in Tx.unroll(MMA_N // EPI_N):
+                epi_st = no * EPI_N
                 
-                # Stage 3: each hread writes f16 values to SMEM
+                # Stage 3: registers → SMEM (Slice by EPI_N)
                 with Tx.thread():
-                    Tx.copy(Dsmem[tid,:], Dreg_f16[:])        # registers → SMEM
+                    Tx.copy(Dsmem[tid, :], Dreg_f16[epi_st:epi_st+EPI_N])
                     Tx.ptx.fence.proxy_async("shared::cta")
+                
                 Tx.cuda.warpgroup_sync(10)
 
-                # Stage 4: one thread issues TMA async store 
+                # Stage 4: SMEM → GMEM (TMA Store pointing to the correct N-dimension offset)
                 with Tx.thread(parent="warpgroup")[tid == 0]:
-                    Tx.copy_async(D[tid,:], Dsmem, dispatch="tma") # SMEM → GMEM (TMA)
+                    Tx.copy_async(
+                        D[m_st:m_st+BLK_M, n_st+epi_st : n_st+epi_st+EPI_N], 
+                        Dsmem, 
+                        dispatch="tma"
+                    )
 
 
             if warp_id == 0:
