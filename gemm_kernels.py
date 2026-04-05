@@ -383,7 +383,7 @@ def hgemm_v4(M, N, K):
     K_TILES = K // BLK_K
 
     TMEM_LD_N, MMA_N = 8, 128 
-    EPI_N = 128 # Process the entire tile at once to avoid TMA store race conditions
+    EPI_N = 64 # Process the entire tile at once to avoid TMA store race conditions
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_N, BLK_K))
@@ -402,6 +402,12 @@ def hgemm_v4(M, N, K):
             wg_id = Tx.warpgroup_id([1], parent="cta")
             warp_id = Tx.warp_id([4], parent="warpgroup")
             lane_id = Tx.thread_id([32], parent="warp")
+            # Recall that warpgroups have 128 threads.
+            # To compute the thread_id,
+            #   warp_id from 0-3 tells us which of the 4 warps the thread belongs to 
+            #   mult by 32 to shift to starting position of the warp given by warp_id
+            #   lane_id adds the threads specific position within its assigned warp.
+            thread_id = warp_id * 32 + lane_id
 
             pool = Tx.PoolAllocator()
             tmem_addr = pool.alloc((1,), "uint32")
@@ -464,39 +470,62 @@ def hgemm_v4(M, N, K):
                 
 
             # Main loop (elected thread of warp 0):
-            tid = Tx.meta_var(warp_id * 32 + lane_id)
+            
+            tid = Tx.meta_var(thread_id)
             with Tx.thread(parent="warpgroup")[tid == 0]:
                 for k in range(K_TILES): 
                     tma_load(k*BLK_K)
                     mma(k != 0)
             Tx.ptx.tcgen05.fence.after_thread_sync()
 
-            # ── Writeback: TMEM → Reg → SMEM → TMA store → GMEM ──
+            # ── Writeback ──
+            # allocate full row fp16 buffer for 128 cols
             Dreg_f16 = Tx.alloc_local((MMA_N,), d_type)
             
-            # TMEM -> Reg Loop (Chunks of 8)
+            # loop 16 times (128 / 8 = 16)
             for no in Tx.unroll(MMA_N // TMEM_LD_N):
-                Dreg = Tx.alloc_local((TMEM_LD_N,), acc_type)
-                Dreg_wg = Dreg.view(128, TMEM_LD_N, layout=TMEM_LD_regview)
                 no_st = no * TMEM_LD_N
                 
-                # Stage 1: TMEM → registers
+                # allocate 8-col fp32 tmp register
+                Dreg = Tx.alloc_local((TMEM_LD_N,), acc_type)
+                Dreg_wg = Dreg.view(MMA_N, TMEM_LD_N, layout=TMEM_LD_regview)
+
+
+                # warpgroup collective: 128 threads read 8 cols from TMEM
                 with Tx.warpgroup():
                     Tx.copy(Dreg_wg, tmem[:, no_st:no_st+TMEM_LD_N])
 
-                # Stage 2: f32 → f16
+                ## per-thread cast: fp32 -> fp16
                 with Tx.thread():
                     Tx.cast(Dreg_f16[no_st:no_st+TMEM_LD_N], Dreg)
-        
-            # Entire block written at once (no EPI_N loop required)
-            with Tx.thread():
-                Tx.copy(Dsmem[tid, :], Dreg_f16[:])
-                Tx.ptx.fence.proxy_async("shared::cta")
-            
-            Tx.cuda.warpgroup_sync(10)
 
-            with Tx.thread(parent="warpgroup")[tid == 0]:
-                Tx.copy_async(D[m_st:m_st+BLK_M, n_st:n_st+BLK_N], Dsmem, dispatch="tma")
+            # loop 2 times (128 / 64) = 2
+            for no in Tx.unroll(MMA_N // EPI_N):
+                epi_st = no * EPI_N
+                
+                # each thread writes its 64-col slice to SMEM
+                with Tx.thread():
+                    Tx.copy(Dsmem[thread_id, :],
+                            Dreg_f16[epi_st:epi_st+EPI_N])
+                    
+                    # make SMEM writes visible to TMA engine
+                    Tx.ptx.fence.proxy_async("shared::cta")
+                
+                # wait until all threads done writing SMEM
+                Tx.cuda.warpgroup_sync(10)
+
+                # elect 1 thread to issue TMA store
+                with Tx.thread(parent="warpgroup")[tid == 0]:
+                    Tx.copy_async(
+                        D[m_st:m_st+MMA_N, n_st+epi_st : n_st+epi_st+EPI_N], 
+                        Dsmem[:, :], dispatch="tma")
+                    
+                    # Commit and wait for TMA store completion
+                    Tx.ptx.cp_async.bulk.commit_group()
+                    Tx.ptx.cp_async.bulk.wait_group(0)
+                
+                # Sync before next iteration
+                Tx.cuda.warpgroup_sync(10)
 
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
