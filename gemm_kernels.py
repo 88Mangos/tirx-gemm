@@ -3,8 +3,8 @@ from tvm.script import tirx as Tx
 
 from tvm.tirx.op_schedule.cuda.common import tma_shared_layout, SwizzleMode
 from tvm.tir.layout import TileLayout, S, TLane, TCol, tid_in_wg as axis_tid_in_wg
-from tvm.tirx.tile_scheduler import ClusterPersistentScheduler2D
-from tvm.tirx.pipeline import PipelineState, MBarrier, TMABar, TCGen05Bar
+from tvm.tirx.tile_scheduler import ClusterPersistentScheduler2D  # noqa: F401
+from tvm.tirx.pipeline import PipelineState, MBarrier, TMABar, TCGen05Bar  # noqa: F401
 
 SM_COUNT = 148  # B200
 F16_SIZE = 2
