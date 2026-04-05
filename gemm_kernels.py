@@ -179,7 +179,7 @@ def hgemm_v2(M, N, K):
             Tx.ptx.fence.mbarrier_init()
             Tx.cuda.cta_sync()
 
-            tmem = Tx.decl_buffer((128, 512), "float32", scope="tmem", allocated_addr=0,
+            tmem = Tx.decl_buffer((128, 512), acc_type, scope="tmem", allocated_addr=0,
                                   layout=TileLayout(S[(128, 512) : (1@TLane, 1@TCol)]))
             
             m_st = Tx.meta_var(bx * BLK_M)           # Compile-time alias for tile row offset
@@ -266,6 +266,7 @@ def hgemm_v3(M, N, K):
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_N, BLK_K))
+    TMA_3D_trick_regview = TileLayout(S[(128, BLK_N) : (1@axis_tid_in_wg, 1)])
 
     @Tx.prim_func(tirx=True)
     def kernel(
@@ -275,11 +276,93 @@ def hgemm_v3(M, N, K):
     ):
         # fmt: off
         with Tx.kernel():
-            # TODO: Launch (M/BLK_M) × (N/BLK_N) CTAs
-            # Hint: bx, by = Tx.cta_id([M // BLK_M, N // BLK_N], parent="kernel")
+            # Launch (M/BLK_M) × (N/BLK_N) CTAs
+            bx, by = Tx.cta_id([M // BLK_M, N // BLK_N], parent="kernel")
+            wg_id = Tx.warpgroup_id([1], parent="cta")
+            warp_id = Tx.warp_id([4], parent="warpgroup")
+            lane_id = Tx.thread_id([32], parent="warp")
+
+            pool = Tx.PoolAllocator()
+            tmem_addr = pool.alloc((1,), "uint32")
+            mma_bar = pool.alloc((1,), "uint64", align=8)
+            pool.move_base_to(1024)
+            Asmem = pool.alloc((BLK_M, BLK_K), a_type, layout=A_layout)
+            Bsmem = pool.alloc((BLK_N, BLK_K), b_type, layout=B_layout)
+            pool.commit()
+
+            if warp_id == 0:
+                if lane_id == 0:
+                    Tx.ptx.mbarrier.init(mma_bar.ptr_to([0]), 1)
+                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
+
+            Tx.ptx.fence.proxy_async("shared::cta")
+            Tx.ptx.fence.mbarrier_init()
+            Tx.cuda.cta_sync()
+
+            tmem = Tx.decl_buffer((128, 512), acc_type, scope="tmem", allocated_addr=0,
+                                  layout=TileLayout(S[(128, 512) : (1@TLane, 1@TCol)]))
+            
             # Use bx*BLK_M and by*BLK_N as tile offsets.
+            m_st = Tx.meta_var(bx * BLK_M)           # Compile-time alias for tile row offset
+            n_st = Tx.meta_var(by * BLK_N)           # Compile-time alias for tile col offset
+
+            phase_mma: Tx.int32
+            phase_mma = 0
+
             # The rest is like step 2 but with dynamic m_st, n_st.
-            pass
+            for k in range(K_TILES):
+                # (Synchronous) load of A and B tiles from GMEM to SMEM 
+                with Tx.cta():  # using all threads in CTA
+                    Tx.copy(Asmem[:,:], A[m_st : m_st + BLK_M, k*BLK_K : (k+1)*BLK_K])
+                    Tx.copy(Bsmem[:,:], B[n_st : n_st + BLK_N, k*BLK_K : (k+1)*BLK_K])
+                
+                # SYNC RULE: Threads write SMEM -> MMA reads SMEM
+                Tx.cuda.cta_sync()  # wait for all 128 threads in the CTA to finish
+                Tx.ptx.tcgen05.fence.after_thread_sync()  # make SMEM visible to tensor cores
+
+                # Issue MMA
+                # Issue MMA (warp 0 only, elected thread)
+                # Then commit and wait on mma_bar
+                if warp_id == 0:
+                    # Single thread dispatch: elect one thread in warp 0 to issue MMA instr 
+                    with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+                        Tx.gemm_async(tmem[:,:BLK_N], Asmem[:,:], Bsmem[:,:], accum=(k != 0), dispatch="tcgen05", cta_group=1)
+                        # Arrival pattern: Tensor core tells hardware to signal mma_bar when done with MMA
+                        Tx.ptx.tcgen05.commit(mma_bar.ptr_to([0]), cta_group=1)
+
+                # all threads wait until MMA is done and the queued commits flip the mbarrier phase 
+                Tx.ptx.mbarrier.try_wait(mma_bar.ptr_to([0]), phase_mma)
+
+                # SYNC RULE: MMA writes TMEM -> Threads read TMEM
+                Tx.cuda.cta_sync()  # sync all threads to ensure every thread is in the next phase 
+                Tx.ptx.tcgen05.fence.after_thread_sync()  # make TMEM data visible to threads
+                phase_mma = phase_mma ^ 1 # flip phase 
+                        
+
+            # TODO: Writeback TMEM → RF → GMEM (same as step 1)
+            # Allocate local (per-thread) register space for the f32 TMEM results and f16 output.
+            Dreg = Tx.alloc_local((BLK_N,), acc_type)
+            Dreg_f16 = Tx.alloc_local((BLK_N,), d_type)
+
+            # Apply the Axe Layout: Maps the 128 threads in the warpgroup (axis_tid_in_wg) to the 128 rows of the tile.
+            # NOTE: Pass 128 and BLK_N as separate arguments, not wrapped in [] or ()
+            Dreg_wg = Dreg.view(128, BLK_N, layout=TMA_3D_trick_regview)
+            
+            # All 128 threads in the warpgroup must cooperate to issue a TMEM read (tcgen05.ld).
+            with Tx.warpgroup():
+                Tx.copy(Dreg_wg[:,:], tmem[:,:BLK_N])       # TMEM → registers
+                Tx.cuda.cta_sync()
+            
+            # Switch to independent thread execution for math and global memory writing.
+            with Tx.thread():
+                Tx.cast(Dreg_f16[:], Dreg[:])                # f32 → f16
+                # Calculate the exact global matrix row this specific thread is responsible for.
+                row = m_st + warp_id * 32 + lane_id
+                Tx.copy(D[row, n_st:n_st + BLK_N], Dreg_f16[:])
+
+            if warp_id == 0:
+                Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
+                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=1)
 
     return kernel
 
