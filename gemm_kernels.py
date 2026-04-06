@@ -979,9 +979,7 @@ def hgemm_v7(M, N, K):
             pool.move_base_to(1024)
             Asmem = pool.alloc((PIPE_DEPTH, BLK_M, BLK_K), a_type, layout=A_layout)
             Bsmem = pool.alloc((PIPE_DEPTH, BLK_N, BLK_K), b_type, layout=B_layout)
-
-            # NOTE: Reset the base to 1024 so Dsmem reuses Asmem/Bsmem space.
-            pool.move_base_to(1024)
+            pool.move_base_to(1024)  # NOTE: Reset the base to 1024 so Dsmem reuses Asmem/Bsmem space.
             Dsmem = pool.alloc((BLK_M, EPI_N), d_type, layout=D_layout)
             pool.commit()
 
@@ -1028,8 +1026,20 @@ def hgemm_v7(M, N, K):
                             # wait for TMA to signal data SMEM to be free
                             mma2tma.wait(tma_phase.stage, tma_phase.phase)
 
-                            Tx.copy_async(Asmem[tma_phase.stage, :, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", cta_group=1, mbar=tma2mma)
-                            Tx.copy_async(Bsmem[tma_phase.stage, :, :], B[n_st : n_st + BLK_N, k_st : k_st + BLK_K], dispatch="tma", cta_group=1, mbar=tma2mma)
+                            Tx.copy_async(
+                                Asmem[tma_phase.stage, :, :],
+                                A[m_st : m_st + BLK_M, k_st : k_st + BLK_K],
+                                dispatch="tma",
+                                cta_group=1,
+                                mbar=tma2mma.ptr_to([tma_phase.stage]),
+                            )
+                            Tx.copy_async(
+                                Bsmem[tma_phase.stage, :, :],
+                                B[n_st : n_st + BLK_N, k_st : k_st + BLK_K],
+                                dispatch="tma",
+                                cta_group=1,
+                                mbar=tma2mma.ptr_to([tma_phase.stage]),
+                            )
 
                         # signal to TMA that SMEM has been copied over
                         tma2mma.arrive(tma_phase.stage, byte_count)
@@ -1051,7 +1061,9 @@ def hgemm_v7(M, N, K):
                             tma2mma.wait(mma_phase.stage, mma_phase.phase)
 
                             Tx.ptx.tcgen05.fence.after_thread_sync()
-                            Tx.gemm_async(tmem[:, :BLK_N], Asmem[mma_phase.stage, :, :], Bsmem[mma_phase.stage, :, :], accum=(k != 0), dispatch="tcgen05", cta_group=1)
+                            Tx.gemm_async(
+                                tmem[:, :BLK_N], Asmem[mma_phase.stage, :, :], Bsmem[mma_phase.stage, :, :], accum=(k != 0), dispatch="tcgen05", cta_group=1
+                            )
 
                             # signal TMA: SMEM has been consumed
                             mma2tma.arrive(mma_phase.stage, cta_group=1, cta_mask=CTA_MASK)
@@ -1070,6 +1082,7 @@ def hgemm_v7(M, N, K):
                 with Tx.warpgroup()[wg_id == 0]:
                     # wait for MMA to finish whole tile
                     mma2ld.wait(0, tma_phase.phase)
+                    Tx.ptx.tcgen05.fence.after_thread_sync()
 
                     # ── Writeback: TMEM → Reg → SMEM → GMEM ──
                     Dreg_f16 = Tx.alloc_local((MMA_N,), d_type)

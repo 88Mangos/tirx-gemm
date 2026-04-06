@@ -10,7 +10,7 @@ reportInvalidTypeForm = false
 stubPath = "typings"
 
 [tool.ruff]
-line-length = 180
+line-length = 160
 
 [tool.ruff.lint]
 # Ignore F401 (unused imports) globally for Ruff
