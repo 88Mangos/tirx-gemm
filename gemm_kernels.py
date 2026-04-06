@@ -554,12 +554,25 @@ def hgemm_v5(M, N, K):
 
     K_TILES = K // BLK_K
     PIPE_DEPTH = 2
+
+    MMA_N = BLK_N
+
+    # NOTE: cannot exceed PIPE_DEPTH.
+    # Buffer Overwrite: If you issue a 3rd TMA load when you only have 2 SMEM buffers, you will overwrite data that the Tensor Core is likely still reading for the 1st tile.
+    # Mbarrier Ambiguity: mbarrier uses a 1-bit phase (0 or 1) to distinguish between "new data arrived" and "old data consumed."
+    #   If you have 2 buffers, you can track them easily.
+    #   If you tried to prefetch 3 tiles into 2 buffers, the hardware wouldn't know which "arrival" the barrier is signaling.
     PRE_NUM = min(PIPE_DEPTH, K_TILES)
+
+    # NOTE: taken from hgemm_v7 starter code comments
+    EPI_N = 64  # Optional, can be any value that divides MMA_N (e.g., 64, 128)
+    TMEM_LD_N = 8  # Optional, can be any value that divides MMA_N (e.g., 8, 16, 128)
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_N, BLK_K))
+    D_layout = tma_shared_layout(d_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, EPI_N))
 
-    # TODO: Setup thread hierarchy, allocate PIPE_DEPTH-buffered SMEM,
+    # Setup thread hierarchy, allocate PIPE_DEPTH-buffered SMEM,
     # init PIPE_DEPTH mbarriers for TMA, 1 for MMA.
     #
     # Pipeline pattern:
@@ -624,27 +637,26 @@ def hgemm_v5(M, N, K):
 
             # ── TMA async load: GMEM → SMEM (hardware-driven) ──
             @Tx.inline
-            def tma_load(k):
-                # NOTE: we pass k now instead of k_st so we can use k to compute stage
-                stage = k % PIPE_DEPTH
-                k_st = k * BLK_K
+            def tma_load(k_st, stage):
                 byte_count = (BLK_M * BLK_K + BLK_N * BLK_K) * 2
 
-                # NOTE: MBar now needs to point to the current stage's
+                # NOTE: MBar now needs to point to the current stage
                 Tx.copy_async(Asmem[stage, :, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([stage]))
                 Tx.copy_async(Bsmem[stage, :, :], B[n_st : n_st + BLK_N, k_st : k_st + BLK_K], dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([stage]))
                 Tx.ptx.mbarrier.arrive.expect_tx(tma_bar.ptr_to([stage]), byte_count)
 
             # ── MMA compute: wait for data, run tcgen05, wait for result ──
             @Tx.inline
-            def mma(accum):
+            def mma(accum, stage):
                 # ---  Waits on tma_bar (data ready) ---
-                Tx.ptx.mbarrier.try_wait(tma_bar.ptr_to([0]), phase_tma)  # pyright: ignore[reportUnboundVariable]  # noqa: F823
-                phase_tma ^= 1  # pyright: ignore[reportUnboundVariable]  # noqa: F841
+                Tx.ptx.mbarrier.try_wait(tma_bar.ptr_to([stage]), phase_tma)  # pyright: ignore[reportUnboundVariable]  # noqa: F823
+                if stage == 0:  # phase flips when stage wraps to zero
+                    phase_tma ^= 1  # pyright: ignore[reportUnboundVariable]  # noqa: F841
                 Tx.ptx.tcgen05.fence.after_thread_sync()
 
                 # --- Issues gemm_async + commit ---
-                Tx.gemm_async(tmem[:, :BLK_N], Asmem[:, :], Bsmem[:, :], accum=accum, dispatch="tcgen05", cta_group=1)
+                # NOTE: for the current stage
+                Tx.gemm_async(tmem[:, :BLK_N], Asmem[stage, :, :], Bsmem[stage, :, :], accum=accum, dispatch="tcgen05", cta_group=1)
                 Tx.ptx.tcgen05.commit(mma_bar.ptr_to([0]), cta_group=1)  # signal MMA done
 
                 # --- Waits on mma_bar (MMA done) ---
@@ -653,9 +665,20 @@ def hgemm_v5(M, N, K):
 
             # --- Main loop (elected thread of warp 0) ---
             with Tx.thread(parent="warpgroup")[thread_id == 0]:
+                # Prefetch PRE_NUM stages into SMEM
+                for pre_k in range(PRE_NUM):
+                    stage = pre_k % PIPE_DEPTH
+                    pre_k_st = pre_k * BLK_K
+
+                    tma_load(pre_k_st, stage)
+
+                # For each K tile, wait for load to finish, compute, then issue the next load.
                 for k in range(K_TILES):
-                    tma_load(k)
-                    mma(k != 0)
+                    stage = k % PIPE_DEPTH
+                    k_st = k * BLK_K
+
+                    tma_load(k_st, stage)
+                    mma(k != 0, stage)
 
             # SYNC RULE: MMA writes TMEM -> Threads read TMEM
             Tx.cuda.warpgroup_sync(10)
