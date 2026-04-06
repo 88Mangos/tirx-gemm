@@ -5,3 +5,5 @@ Private
 - [Step 1](https://gemini.google.com/app/314666be7978223b)
 - [Step 3](https://gemini.google.com/app/6ef593066d379ef1)
 - [Step 4](https://gemini.google.com/app/b909bd134379c3f7)
+
+- [Setting up local language server for TVM highlighting](https://gemini.google.com/app/fa94ad721a9ff492)

@@ -1,9 +1,13 @@
 [tool.pyright]
-ignore = ["*tvm*"]
-# or just disable reportMissingImports
+# disable reportMissingImports
 reportMissingImports = false
+reportMissingModuleSource = false
+
 # Ignore the specific type form error globally for Pyright
 reportInvalidTypeForm = false
+
+# TIRx API hover help
+stubPath = "typings"
 
 [tool.ruff]
 line-length = 160

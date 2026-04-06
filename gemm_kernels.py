@@ -1,3 +1,27 @@
+"""
+Notes for Tyler (tylery):
+To keep the code readable, only comment for
+- Synchronization Rules: Explaining why a barrier is placed somewhere.
+- Hardware Mapping: Documenting thread/warp/block responsibilities.
+- Memory Layouts: High-level notes on tile sizes or swizzling.
+
+To avoid writing semantically meaningless code, magic numbers have been declared at the global scope.
+NOTE: [from README.md]: Constants must be defined outside @Tx.prim_func.
+  Variables like EPI_N, TMEM_LD_N, MMA_N must be Python constants defined alongside BLK_M, BLK_K, etc.
+  Variables assigned inside the kernel function become TIR dynamic variables, which causes errors when used in buffer slicing.
+
+
+Glossary:
+GMEM/HBM    : High-Bandwidth Global Memory
+SMEM        : Shared Memory (per-thread)
+SM          : streaming multiprocessor
+TMA         : tensor memory accelerator
+CTA         : collaborative thread array
+WG          : warpgroup
+
+*_st        : [*] stride
+"""
+
 import tvm
 from tvm.script import tirx as Tx
 
@@ -11,14 +35,6 @@ from tvm.tirx.pipeline import PipelineState, MBarrier, TMABar, TCGen05Bar
 # ======================================================================
 # GEMM Constants
 # All TIRx functions here solve A [M x K] @ B [K x N] -> D [M x N]
-# NOTE [from README.md]:
-#
-# Constants must be defined outside @Tx.prim_func:
-# Variables like EPI_N, TMEM_LD_N, MMA_N must be Python constants
-# defined alongside BLK_M, BLK_K, etc.
-#
-# Variables assigned inside the kernel function become
-# TIR dynamic variables, which causes errors when used in buffer slicing
 # ======================================================================
 a_type = tvm.DataType("float16")
 b_type = tvm.DataType("float16")
@@ -29,10 +45,6 @@ BLK_M, BLK_N, BLK_K = 128, 128, 64
 
 # ======================================================================
 # Hardware Constants
-# SM: streaming multiprocessor
-# TMA: tensor memory accelerator
-# CTA: collaborative thread array
-# WG: warpgroup
 # ======================================================================
 F16_SIZE = 2
 
@@ -61,6 +73,11 @@ def hgemm_v1(M, N, K):
         B: Tx.Buffer((N, K), b_type),
         D: Tx.Buffer((M, N), d_type),
     ):
+        """
+        Hardware mapping & variables:
+        - tmem_addr : Slot to store the TMEM base address returned by tcgen05.alloc
+        - mma_bar   : mbarrier for MMA completion signaling
+        """
         with Tx.kernel():
             bx, by = Tx.cta_id([M // BLK_M, N // BLK_N], parent="kernel")
             wg_id = Tx.warpgroup_id([WG_PER_CTA], parent="cta")
@@ -69,12 +86,13 @@ def hgemm_v1(M, N, K):
 
             # --- Shared memory allocation ---
             pool = Tx.PoolAllocator()
-            tmem_addr = pool.alloc((1,), "uint32")  # Slot to store the TMEM base address returned by tcgen05.alloc
-            mma_bar = pool.alloc((1,), "uint64", align=8)  # mbarrier for MMA completion signaling
+            tmem_addr = pool.alloc((1,), "uint32")
+            mma_bar = pool.alloc((1,), "uint64", align=8)
             pool.move_base_to(1024)  # Skip to offset 1024 so data buffers don't overlap with barriers
+
             Asmem = pool.alloc((BLK_M, BLK_K), a_type, layout=A_layout)
             Bsmem = pool.alloc((BLK_N, BLK_K), b_type, layout=B_layout)
-            pool.commit()  # Finalize all shared memory allocations
+            pool.commit()
 
             # --- Barrier + TMEM init (warp 0 only) ---
             if warp_id == 0:
