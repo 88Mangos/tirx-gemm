@@ -6,7 +6,7 @@ reportMissingImports = false
 reportInvalidTypeForm = false
 
 [tool.ruff]
-line-length = 150
+line-length = 160
 
 [tool.ruff.lint]
 # Ignore F401 (unused imports) globally for Ruff

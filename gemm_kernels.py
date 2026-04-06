@@ -6,8 +6,43 @@ from tvm.tir.layout import TileLayout, S, TLane, TCol, tid_in_wg as axis_tid_in_
 from tvm.tirx.tile_scheduler import ClusterPersistentScheduler2D
 from tvm.tirx.pipeline import PipelineState, MBarrier, TMABar, TCGen05Bar
 
-SM_COUNT = 148  # B200
+
+# MARK: Constants
+# ======================================================================
+# GEMM Constants
+# All TIRx functions here solve A [M x K] @ B [K x N] -> D [M x N]
+# NOTE [from README.md]:
+#
+# Constants must be defined outside @Tx.prim_func:
+# Variables like EPI_N, TMEM_LD_N, MMA_N must be Python constants
+# defined alongside BLK_M, BLK_K, etc.
+#
+# Variables assigned inside the kernel function become
+# TIR dynamic variables, which causes errors when used in buffer slicing
+# ======================================================================
+a_type = tvm.DataType("float16")
+b_type = tvm.DataType("float16")
+d_type = tvm.DataType("float16")
+acc_type = tvm.DataType("float32")
+
+BLK_M, BLK_N, BLK_K = 128, 128, 64
+
+# ======================================================================
+# Hardware Constants
+# SM: streaming multiprocessor
+# TMA: tensor memory accelerator
+# CTA: collaborative thread array
+# WG: warpgroup
+# ======================================================================
 F16_SIZE = 2
+
+# B200-specific
+SM_COUNT = 148
+TMEM_LANES = 128
+WG_PER_CTA = 1
+WARPS_PER_WG = 4
+THREADS_PER_WARP = 32
+THREADS_PER_WG = THREADS_PER_WARP * WARPS_PER_WG
 
 
 # ======================================================================
@@ -17,13 +52,6 @@ F16_SIZE = 2
 # ======================================================================
 # MARK: Step 1
 def hgemm_v1(M, N, K):
-    a_type = tvm.DataType("float16")
-    b_type = tvm.DataType("float16")
-    d_type = tvm.DataType("float16")
-    acc_type = tvm.DataType("float32")
-
-    BLK_M, BLK_N, BLK_K = 128, 128, 64
-
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_N, BLK_K))
 
@@ -35,9 +63,9 @@ def hgemm_v1(M, N, K):
     ):
         with Tx.kernel():
             bx, by = Tx.cta_id([M // BLK_M, N // BLK_N], parent="kernel")
-            wg_id = Tx.warpgroup_id([1], parent="cta")
-            warp_id = Tx.warp_id([4], parent="warpgroup")
-            lane_id = Tx.thread_id([32], parent="warp")
+            wg_id = Tx.warpgroup_id([WG_PER_CTA], parent="cta")
+            warp_id = Tx.warp_id([WARPS_PER_WG], parent="warpgroup")
+            lane_id = Tx.thread_id([THREADS_PER_WARP], parent="warp")
 
             # --- Shared memory allocation ---
             pool = Tx.PoolAllocator()
@@ -62,7 +90,7 @@ def hgemm_v1(M, N, K):
             Tx.cuda.cta_sync()
 
             # Declare a logical view of the allocated TMEM (allocated_addr=0 means use the base from tcgen05.alloc)
-            tmem = Tx.decl_buffer((128, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(128, 512) : (1 @ TLane, 1 @ TCol)]))
+            tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(128, 512) : (1 @ TLane, 1 @ TCol)]))
 
             m_st = Tx.meta_var(bx * BLK_M)  # Compile-time alias for tile row offset
             n_st = Tx.meta_var(by * BLK_N)  # Compile-time alias for tile col offset
@@ -105,7 +133,7 @@ def hgemm_v1(M, N, K):
 
             # Apply the Axe Layout: Maps the 128 threads in the warpgroup (axis_tid_in_wg) to the 128 rows of the tile.
             # NOTE: Pass 128 and BLK_N as separate arguments, not wrapped in [] or ()
-            Dreg_wg = Dreg.view(128, BLK_N, layout=TileLayout(S[(128, BLK_N) : (1 @ axis_tid_in_wg, 1)]))
+            Dreg_wg = Dreg.view(TMEM_LANES, BLK_N, layout=TileLayout(S[(THREADS_PER_WG, BLK_N) : (1 @ axis_tid_in_wg, 1)]))
 
             # All 128 threads in the warpgroup must cooperate to issue a TMEM read (tcgen05.ld).
             with Tx.warpgroup():
@@ -116,7 +144,7 @@ def hgemm_v1(M, N, K):
             with Tx.thread():
                 Tx.cast(Dreg_f16[:], Dreg[:])  # f32 → f16
                 # Calculate the exact global matrix row this specific thread is responsible for.
-                row = m_st + warp_id * 32 + lane_id
+                row = m_st + warp_id * THREADS_PER_WARP + lane_id
                 Tx.copy(D[row, n_st : n_st + BLK_N], Dreg_f16[:])
 
             # --- TMEM cleanup ---
@@ -134,12 +162,7 @@ def hgemm_v1(M, N, K):
 # ======================================================================
 # MARK: Step 2
 def hgemm_v2(M, N, K):
-    a_type = tvm.DataType("float16")
-    b_type = tvm.DataType("float16")
-    d_type = tvm.DataType("float16")
-    acc_type = tvm.DataType("float32")
 
-    BLK_M, BLK_N, BLK_K = 128, 128, 64
     K_TILES = K // BLK_K
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_K))
@@ -249,12 +272,7 @@ def hgemm_v2(M, N, K):
 # ======================================================================
 # MARK: Step 3
 def hgemm_v3(M, N, K):
-    a_type = tvm.DataType("float16")
-    b_type = tvm.DataType("float16")
-    d_type = tvm.DataType("float16")
-    acc_type = tvm.DataType("float32")
 
-    BLK_M, BLK_N, BLK_K = 128, 128, 64
     K_TILES = K // BLK_K
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_K))
@@ -363,12 +381,7 @@ def hgemm_v3(M, N, K):
 # ======================================================================
 # MARK: Step 4
 def hgemm_v4(M, N, K):
-    a_type = tvm.DataType("float16")
-    b_type = tvm.DataType("float16")
-    d_type = tvm.DataType("float16")
-    acc_type = tvm.DataType("float32")
 
-    BLK_M, BLK_N, BLK_K = 128, 128, 64
     K_TILES = K // BLK_K
 
     # TMEM_LD_N, MMA_N = 8, 128
@@ -523,12 +536,7 @@ def hgemm_v4(M, N, K):
 # ======================================================================
 # MARK: Step 5
 def hgemm_v5(M, N, K):
-    a_type = tvm.DataType("float16")
-    b_type = tvm.DataType("float16")
-    d_type = tvm.DataType("float16")
-    acc_type = tvm.DataType("float32")
 
-    BLK_M, BLK_N, BLK_K = 128, 128, 64
     K_TILES = K // BLK_K
     PIPE_DEPTH = 2
     PRE_NUM = min(PIPE_DEPTH, K_TILES)
@@ -563,12 +571,7 @@ def hgemm_v5(M, N, K):
 # ======================================================================
 # MARK: Step 6
 def hgemm_v6(M, N, K):
-    a_type = tvm.DataType("float16")
-    b_type = tvm.DataType("float16")
-    d_type = tvm.DataType("float16")
-    acc_type = tvm.DataType("float32")
 
-    BLK_M, BLK_N, BLK_K = 128, 128, 64
     K_TILES = K // BLK_K
     PIPE_DEPTH = 2
     PRE_NUM = min(PIPE_DEPTH, K_TILES)
@@ -605,12 +608,7 @@ def hgemm_v6(M, N, K):
 # ======================================================================
 # MARK: Step 7
 def hgemm_v7(M, N, K):
-    a_type = tvm.DataType("float16")
-    b_type = tvm.DataType("float16")
-    d_type = tvm.DataType("float16")
-    acc_type = tvm.DataType("float32")
 
-    BLK_M, BLK_N, BLK_K = 128, 128, 64
     MMA_N = BLK_N
     K_TILES = K // BLK_K
     PIPE_DEPTH = 2
@@ -656,12 +654,6 @@ def hgemm_v7(M, N, K):
 # ======================================================================
 # MARK: Step 8
 def hgemm_v8(M, N, K):
-    a_type = tvm.DataType("float16")
-    b_type = tvm.DataType("float16")
-    d_type = tvm.DataType("float16")
-    acc_type = tvm.DataType("float32")
-
-    BLK_M, BLK_N, BLK_K = 128, 128, 64
     MMA_N = BLK_N
     K_TILES = K // BLK_K
     PIPE_DEPTH = 4
@@ -697,13 +689,7 @@ def hgemm_v8(M, N, K):
 # ======================================================================
 # MARK: Step 9
 def hgemm_v9(M, N, K):
-    a_type = tvm.DataType("float16")
-    b_type = tvm.DataType("float16")
-    d_type = tvm.DataType("float16")
-    acc_type = tvm.DataType("float32")
-
     CTA_GROUP = 2
-    BLK_M, BLK_N, BLK_K = 128, 128, 64
     MMA_M, MMA_N = 256, 256
     K_TILES = K // BLK_K
     PIPE_DEPTH = 4
@@ -744,14 +730,8 @@ def hgemm_v9(M, N, K):
 # ======================================================================
 # MARK: Step 10
 def hgemm_v10(M, N, K):
-    a_type = tvm.DataType("float16")
-    b_type = tvm.DataType("float16")
-    d_type = tvm.DataType("float16")
-    acc_type = tvm.DataType("float32")
-
     CTA_GROUP = 2
     NUM_CONSUMER = 2
-    BLK_M, BLK_N, BLK_K = 128, 128, 64
     MMA_M, MMA_N, MMA_K = 256, 256, 16
     K_TILES = K // BLK_K
     PIPE_DEPTH = 4
