@@ -2,3 +2,12 @@
 ignore = ["*tvm*"]
 # or just disable reportMissingImports
 reportMissingImports = false
+# Ignore the specific type form error globally for Pyright
+reportInvalidTypeForm = false
+
+[tool.ruff]
+line-length = 150
+
+[tool.ruff.lint]
+# Ignore F401 (unused imports) globally for Ruff
+ignore = ["F401"]

@@ -3,19 +3,18 @@ from tvm.script import tirx as Tx
 
 from tvm.tirx.op_schedule.cuda.common import tma_shared_layout, SwizzleMode
 from tvm.tir.layout import TileLayout, S, TLane, TCol, tid_in_wg as axis_tid_in_wg
-from tvm.tirx.tile_scheduler import ClusterPersistentScheduler2D  # noqa: F401
-from tvm.tirx.pipeline import PipelineState, MBarrier, TMABar, TCGen05Bar  # noqa: F401
+from tvm.tirx.tile_scheduler import ClusterPersistentScheduler2D
+from tvm.tirx.pipeline import PipelineState, MBarrier, TMABar, TCGen05Bar
 
 SM_COUNT = 148  # B200
 F16_SIZE = 2
 
-# fmt: off
+
 # ======================================================================
 # Step 1: Single-tile synchronous GEMM
 #   M=128, N=128, K=64 — exactly one tile, no loops.
 #   All threads sync-load GMEM→SMEM, one MMA, sync writeback.
 # ======================================================================
-
 def hgemm_v1(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -26,15 +25,13 @@ def hgemm_v1(M, N, K):
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_N, BLK_K))
-    TMA_3D_trick_regview = TileLayout(S[(128, BLK_N) : (1@axis_tid_in_wg, 1)])
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
-        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
-        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
+        A: Tx.Buffer((M, K), a_type),
+        B: Tx.Buffer((N, K), b_type),
+        D: Tx.Buffer((M, N), d_type),
     ):
-        # fmt: off
         with Tx.kernel():
             bx, by = Tx.cta_id([M // BLK_M, N // BLK_N], parent="kernel")
             wg_id = Tx.warpgroup_id([1], parent="cta")
@@ -43,12 +40,12 @@ def hgemm_v1(M, N, K):
 
             # --- Shared memory allocation ---
             pool = Tx.PoolAllocator()
-            tmem_addr = pool.alloc((1,), "uint32")    # Slot to store the TMEM base address returned by tcgen05.alloc
+            tmem_addr = pool.alloc((1,), "uint32")  # Slot to store the TMEM base address returned by tcgen05.alloc
             mma_bar = pool.alloc((1,), "uint64", align=8)  # mbarrier for MMA completion signaling
-            pool.move_base_to(1024)                   # Skip to offset 1024 so data buffers don't overlap with barriers
+            pool.move_base_to(1024)  # Skip to offset 1024 so data buffers don't overlap with barriers
             Asmem = pool.alloc((BLK_M, BLK_K), a_type, layout=A_layout)
             Bsmem = pool.alloc((BLK_N, BLK_K), b_type, layout=B_layout)
-            pool.commit()                             # Finalize all shared memory allocations
+            pool.commit()  # Finalize all shared memory allocations
 
             # --- Barrier + TMEM init (warp 0 only) ---
             if warp_id == 0:
@@ -64,11 +61,10 @@ def hgemm_v1(M, N, K):
             Tx.cuda.cta_sync()
 
             # Declare a logical view of the allocated TMEM (allocated_addr=0 means use the base from tcgen05.alloc)
-            tmem = Tx.decl_buffer((128, 512), acc_type, scope="tmem", allocated_addr=0,
-                                  layout=TileLayout(S[(128, 512) : (1@TLane, 1@TCol)]))
+            tmem = Tx.decl_buffer((128, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(128, 512) : (1 @ TLane, 1 @ TCol)]))
 
-            m_st = Tx.meta_var(bx * BLK_M)           # Compile-time alias for tile row offset
-            n_st = Tx.meta_var(by * BLK_N)           # Compile-time alias for tile col offset
+            m_st = Tx.meta_var(bx * BLK_M)  # Compile-time alias for tile row offset
+            n_st = Tx.meta_var(by * BLK_N)  # Compile-time alias for tile col offset
 
             # TIR requires explicit type declaration for mutable variables
             phase_mma: Tx.int32
@@ -77,27 +73,27 @@ def hgemm_v1(M, N, K):
             # Synchronous load: copy A and B tiles from GMEM to SMEM
             # using all 128 threads in the CTA
             with Tx.cta():
-                Tx.copy(Asmem[:,:], A[m_st:m_st+BLK_M, 0:BLK_K])
-                Tx.copy(Bsmem[:,:], B[n_st:n_st+BLK_N, 0:BLK_K])
+                Tx.copy(Asmem[:, :], A[m_st : m_st + BLK_M, 0:BLK_K])
+                Tx.copy(Bsmem[:, :], B[n_st : n_st + BLK_N, 0:BLK_K])
 
             # SYNC RULE: Threads write SMEM -> MMA reads SMEM
             Tx.cuda.cta_sync()  # wait for all 128 threads in the CTA to finish
-            Tx.ptx.tcgen05.fence.after_thread_sync()  # make SMEM visible to tensor cores 
+            Tx.ptx.tcgen05.fence.after_thread_sync()  # make SMEM visible to tensor cores
 
             # Issue MMA (warp 0 only, elected thread)
             # Then commit and wait on mma_bar
             if warp_id == 0:
-                # Single thread dispatch: elect one thread in warp 0 to issue MMA instr 
+                # Single thread dispatch: elect one thread in warp 0 to issue MMA instr
                 with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
-                    Tx.gemm_async(tmem[:,:BLK_N], Asmem[:,:], Bsmem[:,:], accum=False, dispatch="tcgen05", cta_group=1)
+                    Tx.gemm_async(tmem[:, :BLK_N], Asmem[:, :], Bsmem[:, :], accum=False, dispatch="tcgen05", cta_group=1)
                     # Arrival pattern: Tensor core tells hardware to signal mma_bar when done with MMA
                     Tx.ptx.tcgen05.commit(mma_bar.ptr_to([0]), cta_group=1)
 
-            # all threads wait until MMA is done and the queued commits flip the mbarrier phase 
+            # all threads wait until MMA is done and the queued commits flip the mbarrier phase
             Tx.ptx.mbarrier.try_wait(mma_bar.ptr_to([0]), phase_mma)
 
             # SYNC RULE: MMA writes TMEM -> Threads read TMEM
-            Tx.cuda.cta_sync()  # sync all threads to ensure every thread is in the next phase 
+            Tx.cuda.cta_sync()  # sync all threads to ensure every thread is in the next phase
             Tx.ptx.tcgen05.fence.after_thread_sync()  # make TMEM data visible to threads
 
             # Writeback: TMEM → RF → GMEM
@@ -108,19 +104,19 @@ def hgemm_v1(M, N, K):
 
             # Apply the Axe Layout: Maps the 128 threads in the warpgroup (axis_tid_in_wg) to the 128 rows of the tile.
             # NOTE: Pass 128 and BLK_N as separate arguments, not wrapped in [] or ()
-            Dreg_wg = Dreg.view(128, BLK_N, layout=TMA_3D_trick_regview)
-            
+            Dreg_wg = Dreg.view(128, BLK_N, layout=TileLayout(S[(128, BLK_N) : (1 @ axis_tid_in_wg, 1)]))
+
             # All 128 threads in the warpgroup must cooperate to issue a TMEM read (tcgen05.ld).
             with Tx.warpgroup():
-                Tx.copy(Dreg_wg[:,:], tmem[:,:BLK_N])       # TMEM → registers
+                Tx.copy(Dreg_wg[:, :], tmem[:, :BLK_N])  # TMEM → registers
                 Tx.cuda.cta_sync()
-            
+
             # Switch to independent thread execution for math and global memory writing.
             with Tx.thread():
-                Tx.cast(Dreg_f16[:], Dreg[:])                # f32 → f16
+                Tx.cast(Dreg_f16[:], Dreg[:])  # f32 → f16
                 # Calculate the exact global matrix row this specific thread is responsible for.
                 row = m_st + warp_id * 32 + lane_id
-                Tx.copy(D[row, n_st:n_st + BLK_N], Dreg_f16[:])
+                Tx.copy(D[row, n_st : n_st + BLK_N], Dreg_f16[:])
 
             # --- TMEM cleanup ---
             if warp_id == 0:
@@ -135,7 +131,6 @@ def hgemm_v1(M, N, K):
 #   M=128, N=128, K=any multiple of 64.
 #   Loop over K dimension with accumulation.
 # ======================================================================
-
 def hgemm_v2(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -147,15 +142,13 @@ def hgemm_v2(M, N, K):
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_N, BLK_K))
-    TMA_3D_trick_regview = TileLayout(S[(128, BLK_N) : (1@axis_tid_in_wg, 1)])
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
-        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
-        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
+        A: Tx.Buffer((M, K), a_type),
+        B: Tx.Buffer((N, K), b_type),
+        D: Tx.Buffer((M, N), d_type),
     ):
-        # fmt: off
         with Tx.kernel():
             bx, by = Tx.cta_id([1, 1], parent="kernel")
             wg_id = Tx.warpgroup_id([1], parent="cta")
@@ -179,11 +172,10 @@ def hgemm_v2(M, N, K):
             Tx.ptx.fence.mbarrier_init()
             Tx.cuda.cta_sync()
 
-            tmem = Tx.decl_buffer((128, 512), acc_type, scope="tmem", allocated_addr=0,
-                                  layout=TileLayout(S[(128, 512) : (1@TLane, 1@TCol)]))
-            
-            m_st = Tx.meta_var(bx * BLK_M)           # Compile-time alias for tile row offset
-            n_st = Tx.meta_var(by * BLK_N)           # Compile-time alias for tile col offset
+            tmem = Tx.decl_buffer((128, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(128, 512) : (1 @ TLane, 1 @ TCol)]))
+
+            m_st = Tx.meta_var(bx * BLK_M)  # Compile-time alias for tile row offset
+            n_st = Tx.meta_var(by * BLK_N)  # Compile-time alias for tile col offset
 
             phase_mma: Tx.int32
             phase_mma = 0
@@ -193,11 +185,11 @@ def hgemm_v2(M, N, K):
             #   2. Issue MMA with accum=(k != 0)
             #   3. Wait on mma_bar, flip phase
             for k in range(K_TILES):
-                # (Synchronous) load of A and B tiles from GMEM to SMEM 
+                # (Synchronous) load of A and B tiles from GMEM to SMEM
                 with Tx.cta():  # using all threads in CTA
-                    Tx.copy(Asmem[:,:], A[:, k*BLK_K : (k+1)*BLK_K])
-                    Tx.copy(Bsmem[:,:], B[:, k*BLK_K : (k+1)*BLK_K])
-                
+                    Tx.copy(Asmem[:, :], A[:, k * BLK_K : (k + 1) * BLK_K])
+                    Tx.copy(Bsmem[:, :], B[:, k * BLK_K : (k + 1) * BLK_K])
+
                 # SYNC RULE: Threads write SMEM -> MMA reads SMEM
                 Tx.cuda.cta_sync()  # wait for all 128 threads in the CTA to finish
                 Tx.ptx.tcgen05.fence.after_thread_sync()  # make SMEM visible to tensor cores
@@ -206,20 +198,19 @@ def hgemm_v2(M, N, K):
                 # Issue MMA (warp 0 only, elected thread)
                 # Then commit and wait on mma_bar
                 if warp_id == 0:
-                    # Single thread dispatch: elect one thread in warp 0 to issue MMA instr 
+                    # Single thread dispatch: elect one thread in warp 0 to issue MMA instr
                     with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
-                        Tx.gemm_async(tmem[:,:BLK_N], Asmem[:,:], Bsmem[:,:], accum=(k != 0), dispatch="tcgen05", cta_group=1)
+                        Tx.gemm_async(tmem[:, :BLK_N], Asmem[:, :], Bsmem[:, :], accum=(k != 0), dispatch="tcgen05", cta_group=1)
                         # Arrival pattern: Tensor core tells hardware to signal mma_bar when done with MMA
                         Tx.ptx.tcgen05.commit(mma_bar.ptr_to([0]), cta_group=1)
 
-                # all threads wait until MMA is done and the queued commits flip the mbarrier phase 
+                # all threads wait until MMA is done and the queued commits flip the mbarrier phase
                 Tx.ptx.mbarrier.try_wait(mma_bar.ptr_to([0]), phase_mma)
 
                 # SYNC RULE: MMA writes TMEM -> Threads read TMEM
-                Tx.cuda.cta_sync()  # sync all threads to ensure every thread is in the next phase 
+                Tx.cuda.cta_sync()  # sync all threads to ensure every thread is in the next phase
                 Tx.ptx.tcgen05.fence.after_thread_sync()  # make TMEM data visible to threads
-                phase_mma = phase_mma ^ 1 # flip phase 
-                        
+                phase_mma = phase_mma ^ 1  # flip phase
 
             # TODO: Writeback TMEM → RF → GMEM (same as step 1)
             # Allocate local (per-thread) register space for the f32 TMEM results and f16 output.
@@ -228,19 +219,19 @@ def hgemm_v2(M, N, K):
 
             # Apply the Axe Layout: Maps the 128 threads in the warpgroup (axis_tid_in_wg) to the 128 rows of the tile.
             # NOTE: Pass 128 and BLK_N as separate arguments, not wrapped in [] or ()
-            Dreg_wg = Dreg.view(128, BLK_N, layout=TMA_3D_trick_regview)
-            
+            Dreg_wg = Dreg.view(128, BLK_N, layout=TileLayout(S[(128, BLK_N) : (1 @ axis_tid_in_wg, 1)]))
+
             # All 128 threads in the warpgroup must cooperate to issue a TMEM read (tcgen05.ld).
             with Tx.warpgroup():
-                Tx.copy(Dreg_wg[:,:], tmem[:,:BLK_N])       # TMEM → registers
+                Tx.copy(Dreg_wg[:, :], tmem[:, :BLK_N])  # TMEM → registers
                 Tx.cuda.cta_sync()
-            
+
             # Switch to independent thread execution for math and global memory writing.
             with Tx.thread():
-                Tx.cast(Dreg_f16[:], Dreg[:])                # f32 → f16
+                Tx.cast(Dreg_f16[:], Dreg[:])  # f32 → f16
                 # Calculate the exact global matrix row this specific thread is responsible for.
                 row = m_st + warp_id * 32 + lane_id
-                Tx.copy(D[row, n_st:n_st + BLK_N], Dreg_f16[:])
+                Tx.copy(D[row, n_st : n_st + BLK_N], Dreg_f16[:])
 
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
@@ -254,7 +245,6 @@ def hgemm_v2(M, N, K):
 #   M, N any multiples of 128, K any multiple of 64.
 #   Grid of (M/128)×(N/128) CTAs.
 # ======================================================================
-
 def hgemm_v3(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -266,15 +256,13 @@ def hgemm_v3(M, N, K):
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_N, BLK_K))
-    TMA_3D_trick_regview = TileLayout(S[(128, BLK_N) : (1@axis_tid_in_wg, 1)])
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
-        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
-        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
+        A: Tx.Buffer((M, K), a_type),
+        B: Tx.Buffer((N, K), b_type),
+        D: Tx.Buffer((M, N), d_type),
     ):
-        # fmt: off
         with Tx.kernel():
             # Launch (M/BLK_M) × (N/BLK_N) CTAs
             bx, by = Tx.cta_id([M // BLK_M, N // BLK_N], parent="kernel")
@@ -299,23 +287,22 @@ def hgemm_v3(M, N, K):
             Tx.ptx.fence.mbarrier_init()
             Tx.cuda.cta_sync()
 
-            tmem = Tx.decl_buffer((128, 512), acc_type, scope="tmem", allocated_addr=0,
-                                  layout=TileLayout(S[(128, 512) : (1@TLane, 1@TCol)]))
-            
+            tmem = Tx.decl_buffer((128, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(128, 512) : (1 @ TLane, 1 @ TCol)]))
+
             # Use bx*BLK_M and by*BLK_N as tile offsets.
-            m_st = Tx.meta_var(bx * BLK_M)           # Compile-time alias for tile row offset
-            n_st = Tx.meta_var(by * BLK_N)           # Compile-time alias for tile col offset
+            m_st = Tx.meta_var(bx * BLK_M)  # Compile-time alias for tile row offset
+            n_st = Tx.meta_var(by * BLK_N)  # Compile-time alias for tile col offset
 
             phase_mma: Tx.int32
             phase_mma = 0
 
             # The rest is like step 2 but with dynamic m_st, n_st.
             for k in range(K_TILES):
-                # (Synchronous) load of A and B tiles from GMEM to SMEM 
+                # (Synchronous) load of A and B tiles from GMEM to SMEM
                 with Tx.cta():  # using all threads in CTA
-                    Tx.copy(Asmem[:,:], A[m_st : m_st + BLK_M, k*BLK_K : (k+1)*BLK_K])
-                    Tx.copy(Bsmem[:,:], B[n_st : n_st + BLK_N, k*BLK_K : (k+1)*BLK_K])
-                
+                    Tx.copy(Asmem[:, :], A[m_st : m_st + BLK_M, k * BLK_K : (k + 1) * BLK_K])
+                    Tx.copy(Bsmem[:, :], B[n_st : n_st + BLK_N, k * BLK_K : (k + 1) * BLK_K])
+
                 # SYNC RULE: Threads write SMEM -> MMA reads SMEM
                 Tx.cuda.cta_sync()  # wait for all 128 threads in the CTA to finish
                 Tx.ptx.tcgen05.fence.after_thread_sync()  # make SMEM visible to tensor cores
@@ -324,20 +311,19 @@ def hgemm_v3(M, N, K):
                 # Issue MMA (warp 0 only, elected thread)
                 # Then commit and wait on mma_bar
                 if warp_id == 0:
-                    # Single thread dispatch: elect one thread in warp 0 to issue MMA instr 
+                    # Single thread dispatch: elect one thread in warp 0 to issue MMA instr
                     with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
-                        Tx.gemm_async(tmem[:,:BLK_N], Asmem[:,:], Bsmem[:,:], accum=(k != 0), dispatch="tcgen05", cta_group=1)
+                        Tx.gemm_async(tmem[:, :BLK_N], Asmem[:, :], Bsmem[:, :], accum=(k != 0), dispatch="tcgen05", cta_group=1)
                         # Arrival pattern: Tensor core tells hardware to signal mma_bar when done with MMA
                         Tx.ptx.tcgen05.commit(mma_bar.ptr_to([0]), cta_group=1)
 
-                # all threads wait until MMA is done and the queued commits flip the mbarrier phase 
+                # all threads wait until MMA is done and the queued commits flip the mbarrier phase
                 Tx.ptx.mbarrier.try_wait(mma_bar.ptr_to([0]), phase_mma)
 
                 # SYNC RULE: MMA writes TMEM -> Threads read TMEM
-                Tx.cuda.cta_sync()  # sync all threads to ensure every thread is in the next phase 
+                Tx.cuda.cta_sync()  # sync all threads to ensure every thread is in the next phase
                 Tx.ptx.tcgen05.fence.after_thread_sync()  # make TMEM data visible to threads
-                phase_mma = phase_mma ^ 1 # flip phase 
-                        
+                phase_mma = phase_mma ^ 1  # flip phase
 
             # TODO: Writeback TMEM → RF → GMEM (same as step 1)
             # Allocate local (per-thread) register space for the f32 TMEM results and f16 output.
@@ -346,19 +332,19 @@ def hgemm_v3(M, N, K):
 
             # Apply the Axe Layout: Maps the 128 threads in the warpgroup (axis_tid_in_wg) to the 128 rows of the tile.
             # NOTE: Pass 128 and BLK_N as separate arguments, not wrapped in [] or ()
-            Dreg_wg = Dreg.view(128, BLK_N, layout=TMA_3D_trick_regview)
-            
+            Dreg_wg = Dreg.view(128, BLK_N, layout=TileLayout(S[(128, BLK_N) : (1 @ axis_tid_in_wg, 1)]))
+
             # All 128 threads in the warpgroup must cooperate to issue a TMEM read (tcgen05.ld).
             with Tx.warpgroup():
-                Tx.copy(Dreg_wg[:,:], tmem[:,:BLK_N])       # TMEM → registers
+                Tx.copy(Dreg_wg[:, :], tmem[:, :BLK_N])  # TMEM → registers
                 Tx.cuda.cta_sync()
-            
+
             # Switch to independent thread execution for math and global memory writing.
             with Tx.thread():
-                Tx.cast(Dreg_f16[:], Dreg[:])                # f32 → f16
+                Tx.cast(Dreg_f16[:], Dreg[:])  # f32 → f16
                 # Calculate the exact global matrix row this specific thread is responsible for.
                 row = m_st + warp_id * 32 + lane_id
-                Tx.copy(D[row, n_st:n_st + BLK_N], Dreg_f16[:])
+                Tx.copy(D[row, n_st : n_st + BLK_N], Dreg_f16[:])
 
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
@@ -372,7 +358,6 @@ def hgemm_v3(M, N, K):
 #   Replace sync load with TMA (single-thread dispatch, mbarrier sync).
 #   Writeback uses TMA store: TMEM → RF → SMEM → TMA → GMEM.
 # ======================================================================
-
 def hgemm_v4(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -382,7 +367,7 @@ def hgemm_v4(M, N, K):
     BLK_M, BLK_N, BLK_K = 128, 128, 64
     K_TILES = K // BLK_K
 
-    # TMEM_LD_N, MMA_N = 8, 128 
+    # TMEM_LD_N, MMA_N = 8, 128
     # EPI_N = 64 # Process the entire tile at once to avoid TMA store race conditions
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_K))
@@ -391,11 +376,10 @@ def hgemm_v4(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
-        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
-        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
+        A: Tx.Buffer((M, K), a_type),
+        B: Tx.Buffer((N, K), b_type),
+        D: Tx.Buffer((M, N), d_type),
     ):
-        # fmt: off
         with Tx.kernel():
             bx, by = Tx.cta_id([M // BLK_M, N // BLK_N], parent="kernel")
             wg_id = Tx.warpgroup_id([1], parent="cta")
@@ -403,7 +387,7 @@ def hgemm_v4(M, N, K):
             lane_id = Tx.thread_id([32], parent="warp")
             # Recall that warpgroups have 128 threads.
             # To compute the thread_id,
-            #   warp_id from 0-3 tells us which of the 4 warps the thread belongs to 
+            #   warp_id from 0-3 tells us which of the 4 warps the thread belongs to
             #   mult by 32 to shift to starting position of the warp given by warp_id
             #   lane_id adds the threads specific position within its assigned warp.
             thread_id = Tx.meta_var(warp_id * 32 + lane_id)
@@ -415,7 +399,7 @@ def hgemm_v4(M, N, K):
             pool.move_base_to(1024)
             Asmem = pool.alloc((BLK_M, BLK_K), a_type, layout=A_layout)
             Bsmem = pool.alloc((BLK_N, BLK_K), b_type, layout=B_layout)
-            
+
             # OVERLAP: Reset the base to 1024 so Dsmem reuses Asmem/Bsmem space.
             # 128x128x2 = 32KB. Total SMEM remains ~33KB (under the 48KB limit).
             pool.move_base_to(1024)
@@ -432,14 +416,10 @@ def hgemm_v4(M, N, K):
             Tx.ptx.fence.mbarrier_init()
             Tx.cuda.cta_sync()
 
-            # TMEM_LANES = 128  # HW-specific 
-            # TMEM_COLS = 512 # we allocated n_cols = 512 
+            # TMEM_LANES = 128  # HW-specific
+            # TMEM_COLS = 512 # we allocated n_cols = 512
 
-            tmem = Tx.decl_buffer((128, 512), acc_type, scope="tmem", allocated_addr=0,
-                                  layout=TileLayout(S[(128, 512) : (1@TLane, 1@TCol)]))
-            
-            TMEM_LD_regview = TileLayout(S[(128, 8) : (1@TLane, 1@TCol)])
-            
+            tmem = Tx.decl_buffer((128, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(128, 512) : (1 @ TLane, 1 @ TCol)]))
 
             m_st = Tx.meta_var(bx * BLK_M)
             n_st = Tx.meta_var(by * BLK_N)
@@ -450,12 +430,12 @@ def hgemm_v4(M, N, K):
             phase_mma = 0
 
             # ── TMA async load: GMEM → SMEM (hardware-driven) ──
-            @Tx.inline 
+            @Tx.inline
             def tma_load(k_st):
-                byte_count = (BLK_M * BLK_K + BLK_N * BLK_K) * 2 
+                byte_count = (BLK_M * BLK_K + BLK_N * BLK_K) * 2
 
-                Tx.copy_async(Asmem[:, :], A[m_st:m_st+BLK_M, k_st:k_st+BLK_K], dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([0]))
-                Tx.copy_async(Bsmem[:, :], B[n_st:n_st+BLK_N, k_st:k_st+BLK_K], dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([0]))
+                Tx.copy_async(Asmem[:, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([0]))
+                Tx.copy_async(Bsmem[:, :], B[n_st : n_st + BLK_N, k_st : k_st + BLK_K], dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([0]))
                 Tx.ptx.mbarrier.arrive.expect_tx(tma_bar.ptr_to([0]), byte_count)
 
             # ── MMA compute: wait for data, run tcgen05, wait for result ──
@@ -464,22 +444,20 @@ def hgemm_v4(M, N, K):
             #   3. Waits on mma_bar (MMA done)
             @Tx.inline
             def mma(accum):
-                Tx.ptx.mbarrier.try_wait(tma_bar.ptr_to([0]), phase_tma)   # wait TMA done
+                Tx.ptx.mbarrier.try_wait(tma_bar.ptr_to([0]), phase_tma)  # wait TMA done
                 phase_tma ^= 1
                 Tx.ptx.tcgen05.fence.after_thread_sync()
-                Tx.gemm_async(tmem[:,:BLK_N], Asmem[:,:], Bsmem[:,:],
-                              accum=accum, dispatch="tcgen05", cta_group=1)
-                Tx.ptx.tcgen05.commit(mma_bar.ptr_to([0]), cta_group=1)    # signal MMA done
-                Tx.ptx.mbarrier.try_wait(mma_bar.ptr_to([0]), phase_mma)   # wait MMA done
+                Tx.gemm_async(tmem[:, :BLK_N], Asmem[:, :], Bsmem[:, :], accum=accum, dispatch="tcgen05", cta_group=1)
+                Tx.ptx.tcgen05.commit(mma_bar.ptr_to([0]), cta_group=1)  # signal MMA done
+                Tx.ptx.mbarrier.try_wait(mma_bar.ptr_to([0]), phase_mma)  # wait MMA done
                 phase_mma ^= 1
-                
 
             # Main loop (elected thread of warp 0):
-            
+
             tid = Tx.meta_var(thread_id)
             with Tx.thread(parent="warpgroup")[tid == 0]:
-                for k in range(K_TILES): 
-                    tma_load(k*BLK_K)
+                for k in range(K_TILES):
+                    tma_load(k * BLK_K)
                     mma(k != 0)
 
             Tx.cuda.warpgroup_sync(10)
@@ -488,47 +466,43 @@ def hgemm_v4(M, N, K):
             # ── Writeback ──
             # allocate full row fp16 buffer for 128 cols
             Dreg_f16 = Tx.alloc_local((128,), d_type)
-            
+
             # loop 16 times (128 / 8 = 16)
             for no in Tx.unroll(128 // 8):
-                
                 # allocate 8-col fp32 tmp register
                 Dreg = Tx.alloc_local((8,), acc_type)
 
                 # warpgroup collective: 128 threads read 8 cols from TMEM
                 with Tx.warpgroup():
-                    Dreg_wg = Dreg.view(128, 8, layout=TMEM_LD_regview)
-                    Tx.copy(Dreg_wg[:, :], tmem[:, no * 8:no * 8+8])
+                    Dreg_wg = Dreg.view(128, 8, layout=TileLayout(S[(128, 8) : (1 @ TLane, 1 @ TCol)]))
+                    Tx.copy(Dreg_wg[:, :], tmem[:, no * 8 : no * 8 + 8])
 
                 ## per-thread cast: fp32 -> fp16
                 with Tx.thread():
-                    Tx.cast(Dreg_f16[no * 8:no * 8+8], Dreg[:])
+                    Tx.cast(Dreg_f16[no * 8 : no * 8 + 8], Dreg[:])
 
             # loop 2 times (128 / 64) = 2
             for no in Tx.unroll(128 // 64):
                 n_epi_st = Tx.meta_var(n_st + no * 64)
-                
+
                 # each thread writes its 64-col slice to SMEM
                 with Tx.thread():
-                    Tx.copy(Dsmem[thread_id, :],
-                            Dreg_f16[no * 64:no * 64+64])
-                    
+                    Tx.copy(Dsmem[thread_id, :], Dreg_f16[no * 64 : no * 64 + 64])
+
                     # make SMEM writes visible to TMA engine
                     Tx.ptx.fence.proxy_async("shared::cta")
-                
+
                 # wait until all threads done writing SMEM
                 Tx.cuda.warpgroup_sync(10)
 
                 # elect 1 thread to issue TMA store
                 with Tx.thread(parent="warpgroup")[tid == 0]:
-                    Tx.copy_async(
-                        D[m_st:m_st+BLK_M, n_epi_st : n_epi_st+64], 
-                        Dsmem[:, :], dispatch="tma")
-                    
+                    Tx.copy_async(D[m_st : m_st + BLK_M, n_epi_st : n_epi_st + 64], Dsmem[:, :], dispatch="tma")
+
                     # Commit and wait for TMA store completion
                     Tx.ptx.cp_async.bulk.commit_group()
                     Tx.ptx.cp_async.bulk.wait_group(0)
-                
+
                 # Sync before next iteration
                 Tx.cuda.warpgroup_sync(10)
 
@@ -543,7 +517,6 @@ def hgemm_v4(M, N, K):
 # Step 5: Software pipeline
 #   PIPE_DEPTH=2 multi-buffered SMEM. Prefetch + overlap.
 # ======================================================================
-
 def hgemm_v5(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -560,11 +533,10 @@ def hgemm_v5(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
-        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
-        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
+        A: Tx.Buffer((M, K), a_type),
+        B: Tx.Buffer((N, K), b_type),
+        D: Tx.Buffer((M, N), d_type),
     ):
-        # fmt: off
         with Tx.kernel():
             # TODO: Setup thread hierarchy, allocate PIPE_DEPTH-buffered SMEM,
             # init PIPE_DEPTH mbarriers for TMA, 1 for MMA.
@@ -584,7 +556,6 @@ def hgemm_v5(M, N, K):
 # Step 6: Persistent kernel + tile scheduler
 #   Fixed SM_COUNT CTAs, loop over tiles with L2-friendly ordering.
 # ======================================================================
-
 def hgemm_v6(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -601,11 +572,10 @@ def hgemm_v6(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
-        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
-        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
+        A: Tx.Buffer((M, K), a_type),
+        B: Tx.Buffer((N, K), b_type),
+        D: Tx.Buffer((M, N), d_type),
     ):
-        # fmt: off
         with Tx.kernel():
             # TODO: Launch SM_COUNT persistent CTAs.
             # Use ClusterPersistentScheduler2D for tile iteration.
@@ -627,7 +597,6 @@ def hgemm_v6(M, N, K):
 #   4 barrier types: tma2mma, mma2tma, mma2ld, ld2mma
 #   PIPE_DEPTH=2 (same as step 6, focus on warp spec structure)
 # ======================================================================
-
 def hgemm_v7(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -638,8 +607,8 @@ def hgemm_v7(M, N, K):
     MMA_N = BLK_N
     K_TILES = K // BLK_K
     PIPE_DEPTH = 2
-    EPI_N = 64       # Optional, can be any value that divides MMA_N (e.g., 64, 128)
-    TMEM_LD_N = 8    # Optional, can be any value that divides MMA_N (e.g., 8, 16, 128)
+    EPI_N = 64  # Optional, can be any value that divides MMA_N (e.g., 64, 128)
+    TMEM_LD_N = 8  # Optional, can be any value that divides MMA_N (e.g., 8, 16, 128)
     WG_NUMBER = 2
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_M, BLK_K))
@@ -648,11 +617,10 @@ def hgemm_v7(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
-        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
-        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
+        A: Tx.Buffer((M, K), a_type),
+        B: Tx.Buffer((N, K), b_type),
+        D: Tx.Buffer((M, N), d_type),
     ):
-        # fmt: off
         with Tx.kernel():
             # TODO: 2 warpgroups, 4 barrier types (TMABar, TCGen05Bar, MBarrier).
             # Use PipelineState for phase tracking.
@@ -679,7 +647,6 @@ def hgemm_v7(M, N, K):
 #   to better hide TMA latency. Only changes: PIPE_DEPTH=2 → 4,
 #   which affects barrier array sizes and Asmem/Bsmem stage dimensions.
 # ======================================================================
-
 def hgemm_v8(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -700,11 +667,10 @@ def hgemm_v8(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
-        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
-        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
+        A: Tx.Buffer((M, K), a_type),
+        B: Tx.Buffer((N, K), b_type),
+        D: Tx.Buffer((M, N), d_type),
     ):
-        # fmt: off
         with Tx.kernel():
             # TODO: Same structure as step 7 but with PIPE_DEPTH=4.
             # Changes needed:
@@ -721,7 +687,6 @@ def hgemm_v8(M, N, K):
 # Step 9: Cluster — 2-CTA cooperation
 #   CTA_GROUP=2, MMA_M=MMA_N=256, cross-CTA TMEM sharing.
 # ======================================================================
-
 def hgemm_v9(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -744,11 +709,10 @@ def hgemm_v9(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
-        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
-        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
+        A: Tx.Buffer((M, K), a_type),
+        B: Tx.Buffer((N, K), b_type),
+        D: Tx.Buffer((M, N), d_type),
     ):
-        # fmt: off
         with Tx.kernel():
             # TODO: Extend step 7 with CTA_GROUP=2 cluster.
             # Key changes:
@@ -769,7 +733,6 @@ def hgemm_v9(M, N, K):
 #   NUM_CONSUMER=2, WG2 (TMA+MMA), WG0/WG1 (writeback).
 #   This is the final optimized kernel.
 # ======================================================================
-
 def hgemm_v10(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -793,11 +756,10 @@ def hgemm_v10(M, N, K):
 
     @Tx.prim_func(tirx=True)
     def kernel(
-        A: Tx.Buffer((M, K), a_type), # pyright: ignore[reportInvalidTypeForm]
-        B: Tx.Buffer((N, K), b_type), # pyright: ignore[reportInvalidTypeForm]
-        D: Tx.Buffer((M, N), d_type), # pyright: ignore[reportInvalidTypeForm]
+        A: Tx.Buffer((M, K), a_type),
+        B: Tx.Buffer((N, K), b_type),
+        D: Tx.Buffer((M, N), d_type),
     ):
-        # fmt: off
         with Tx.kernel():
             # TODO: 3 warpgroups, 2 consumers, 2-CTA cluster.
             # Key changes from step 9:
