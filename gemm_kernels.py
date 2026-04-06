@@ -559,6 +559,15 @@ def hgemm_v5(M, N, K):
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_N, BLK_K))
 
+    # TODO: Setup thread hierarchy, allocate PIPE_DEPTH-buffered SMEM,
+    # init PIPE_DEPTH mbarriers for TMA, 1 for MMA.
+    #
+    # Pipeline pattern:
+    #   1. Prefetch PRE_NUM stages
+    #   2. Main loop: mma(stage) then tma_load(next_stage)
+    #   3. Track phase_tma[stage] per stage, phase_mma globally
+    #
+    # Writeback same as step 4.
     @Tx.prim_func(tirx=True)
     def kernel(
         A: Tx.Buffer((M, K), a_type),
@@ -566,16 +575,136 @@ def hgemm_v5(M, N, K):
         D: Tx.Buffer((M, N), d_type),
     ):
         with Tx.kernel():
-            # TODO: Setup thread hierarchy, allocate PIPE_DEPTH-buffered SMEM,
-            # init PIPE_DEPTH mbarriers for TMA, 1 for MMA.
-            #
-            # Pipeline pattern:
-            #   1. Prefetch PRE_NUM stages
-            #   2. Main loop: mma(stage) then tma_load(next_stage)
-            #   3. Track phase_tma[stage] per stage, phase_mma globally
-            #
-            # Writeback same as step 4.
-            pass
+            bx, by = Tx.cta_id([M // BLK_M, N // BLK_N], parent="kernel")
+            _wg_id = Tx.warpgroup_id([WG_PER_CTA], parent="cta")
+            warp_id = Tx.warp_id([WARPS_PER_WG], parent="warpgroup")
+            lane_id = Tx.thread_id([THREADS_PER_WARP], parent="warp")
+            thread_id = Tx.meta_var(warp_id * THREADS_PER_WARP + lane_id)
+
+            # --- Shared memory allocation ---
+
+            pool = Tx.PoolAllocator()
+            tmem_addr = pool.alloc((1,), "uint32")
+            tma_bar = pool.alloc((PIPE_DEPTH,), "uint64", align=8)
+            mma_bar = pool.alloc((1,), "uint64", align=8)
+
+            pool.move_base_to(1024)
+            Asmem = pool.alloc((PIPE_DEPTH, BLK_M, BLK_K), a_type, layout=A_layout)
+            Bsmem = pool.alloc((PIPE_DEPTH, BLK_N, BLK_K), b_type, layout=B_layout)
+
+            # NOTE: Reset the base to 1024 so Dsmem reuses Asmem/Bsmem space.
+            # Exists because I tried setting EPI_N to 128 originally,
+            # BLK_M * BLK_K + BLK_N + BLK_K + BLK_M * EPI_N elements
+            # = 128 * 64 * 2 + 128 * 128 = 128 * 128 * 2 = 32,768 elements,
+            # F16_SIZE = 2 bytes per element, exceeds 48KB SMEM limit.
+            # Re-use means we only use 128 * 128 * 2 = 32768 bytes, under the 48KB limit.
+            pool.move_base_to(1024)
+            Dsmem = pool.alloc((BLK_M, EPI_N), d_type, layout=D_layout)
+            pool.commit()
+
+            # --- Barrier + TMEM init (warp 0 only) ---
+            if warp_id == 0:
+                if lane_id == 0:
+                    Tx.ptx.mbarrier.init(mma_bar.ptr_to([0]), 1)
+                    Tx.ptx.mbarrier.init(tma_bar.ptr_to([0]), 1)
+                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
+
+            Tx.ptx.fence.proxy_async("shared::cta")
+            Tx.ptx.fence.mbarrier_init()
+            Tx.cuda.cta_sync()
+
+            tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
+
+            m_st, n_st = Tx.meta_var(bx * BLK_M), Tx.meta_var(by * BLK_N)
+
+            phase_tma: Tx.int32
+            phase_mma: Tx.int32
+            phase_tma = 0
+            phase_mma = 0
+
+            # ── TMA async load: GMEM → SMEM (hardware-driven) ──
+            @Tx.inline
+            def tma_load(k):
+                # NOTE: we pass k now instead of k_st so we can use k to compute stage
+                stage = k % PIPE_DEPTH
+                k_st = k * BLK_K
+                byte_count = (BLK_M * BLK_K + BLK_N * BLK_K) * 2
+
+                # NOTE: MBar now needs to point to the current stage's
+                Tx.copy_async(Asmem[stage, :, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([stage]))
+                Tx.copy_async(Bsmem[stage, :, :], B[n_st : n_st + BLK_N, k_st : k_st + BLK_K], dispatch="tma", cta_group=1, mbar=tma_bar.ptr_to([stage]))
+                Tx.ptx.mbarrier.arrive.expect_tx(tma_bar.ptr_to([stage]), byte_count)
+
+            # ── MMA compute: wait for data, run tcgen05, wait for result ──
+            @Tx.inline
+            def mma(accum):
+                # ---  Waits on tma_bar (data ready) ---
+                Tx.ptx.mbarrier.try_wait(tma_bar.ptr_to([0]), phase_tma)  # pyright: ignore[reportUnboundVariable]  # noqa: F823
+                phase_tma ^= 1  # pyright: ignore[reportUnboundVariable]  # noqa: F841
+                Tx.ptx.tcgen05.fence.after_thread_sync()
+
+                # --- Issues gemm_async + commit ---
+                Tx.gemm_async(tmem[:, :BLK_N], Asmem[:, :], Bsmem[:, :], accum=accum, dispatch="tcgen05", cta_group=1)
+                Tx.ptx.tcgen05.commit(mma_bar.ptr_to([0]), cta_group=1)  # signal MMA done
+
+                # --- Waits on mma_bar (MMA done) ---
+                Tx.ptx.mbarrier.try_wait(mma_bar.ptr_to([0]), phase_mma)  # pyright: ignore[reportUnboundVariable] # noqa: F823
+                phase_mma ^= 1  # pyright: ignore[reportUnboundVariable]  # noqa: F841
+
+            # --- Main loop (elected thread of warp 0) ---
+            with Tx.thread(parent="warpgroup")[thread_id == 0]:
+                for k in range(K_TILES):
+                    tma_load(k)
+                    mma(k != 0)
+
+            # SYNC RULE: MMA writes TMEM -> Threads read TMEM
+            Tx.cuda.warpgroup_sync(10)
+            Tx.ptx.tcgen05.fence.after_thread_sync()
+
+            # ── Writeback: TMEM → Reg → SMEM → GMEM ──
+            Dreg_f16 = Tx.alloc_local((MMA_N,), d_type)
+
+            for no in Tx.unroll(MMA_N // TMEM_LD_N):
+                no_st = Tx.meta_var(no * TMEM_LD_N)
+                Dreg = Tx.alloc_local((TMEM_LD_N,), acc_type)  # tmp register
+
+                # --- all threads in WG write TMEM → Reg ---
+                with Tx.warpgroup():
+                    Dreg_wg = Dreg.view(MMA_N, TMEM_LD_N, layout=TileLayout(S[(MMA_N, TMEM_LD_N) : (1 @ TLane, 1 @ TCol)]))
+                    Tx.copy(Dreg_wg[:, :], tmem[:, no_st : no_st + TMEM_LD_N])
+
+                # -- per-thread cast ---
+                with Tx.thread():
+                    Tx.cast(Dreg_f16[no_st : no_st + TMEM_LD_N], Dreg[:])
+
+            for no in Tx.unroll(MMA_N // EPI_N):
+                no_st = Tx.meta_var(no * EPI_N)
+                n_epi_st = Tx.meta_var(n_st + no_st)
+
+                # --- per-thread write EPI_N-col slice to SMEM ---
+                with Tx.thread():
+                    Tx.copy(Dsmem[thread_id, :], Dreg_f16[no_st : no_st + EPI_N])
+
+                    # make SMEM writes visible to TMA engine
+                    Tx.ptx.fence.proxy_async("shared::cta")
+
+                # wait until all threads done writing SMEM
+                Tx.cuda.warpgroup_sync(10)
+
+                # --- TMA Store (elected thread of warp 0) ---
+                with Tx.thread(parent="warpgroup")[thread_id == 0]:
+                    Tx.copy_async(D[m_st : m_st + BLK_M, n_epi_st : n_epi_st + EPI_N], Dsmem[:, :], dispatch="tma")
+
+                    # Commit and wait for TMA store completion
+                    Tx.ptx.cp_async.bulk.commit_group()
+                    Tx.ptx.cp_async.bulk.wait_group(0)
+
+                # Sync before next iteration
+                Tx.cuda.warpgroup_sync(10)
+
+            if warp_id == 0:
+                Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
+                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=1)
 
     return kernel
 
