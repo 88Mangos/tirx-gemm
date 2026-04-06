@@ -1,0 +1,256 @@
+========================================
+Modal run output - Started at Mon Apr  6 07:40:50 EDT 2026
+Steps: 5
+========================================
+Running: modal run run_modal.py --step 5
+
+✓ Initialized. View run at https://modal.com/apps/tylery/main/ap-c08q3DrvexMiKjlYDHrEcq
+✓ Created objects.
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm/run_modal.py
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm
+├── 🔨 Created function run_tests.
+└── 🔨 Created function run_inspect.
+Running step 5: tests/test_step05.py
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 13.0.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace
+configfile: pyproject.toml
+[11:42:10] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[11:42:10] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[11:42:10] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[11:42:10] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[11:42:10] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[11:42:10] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+collecting ... collected 4 items
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 0, TPC 0, SM 0): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x505730=0x20021 0x505734=0x24 0x505728=0x1f81fb60 0x50572c=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 0, TPC 0, SM 1): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x5057b0=0x20021 0x5057b4=0x24 0x5057a8=0x1f81fb60 0x5057ac=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 1, TPC 0, SM 0): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x515730=0x20021 0x515734=0x24 0x515728=0x1f81fb60 0x51572c=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 1, TPC 0, SM 1): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x5157b0=0x20021 0x5157b4=0x24 0x5157a8=0x1f81fb60 0x5157ac=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 1, TPC 3, SM 0): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x518730=0x20021 0x518734=0x24 0x518728=0x1f81fb60 0x51872c=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 1, TPC 3, SM 1): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x5187b0=0x10021 0x5187b4=0x24 0x5187a8=0x1f81fb60 0x5187ac=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 1, TPC 5, SM 0): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x51a730=0x10021 0x51a734=0x24 0x51a728=0x1f81fb60 0x51a72c=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 1, TPC 5, SM 1): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x51a7b0=0x20021 0x51a7b4=0x24 0x51a7a8=0x1f81fb60 0x51a7ac=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 1, TPC 7, SM 0): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x51c730=0x20021 0x51c734=0x24 0x51c728=0x1f81fb60 0x51c72c=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 1, TPC 7, SM 1): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x51c7b0=0x20021 0x51c7b4=0x24 0x51c7a8=0x1f81fb60 0x51c7ac=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 2, TPC 0, SM 0): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x525730=0x20021 0x525734=0x24 0x525728=0x1f81fb60 0x52572c=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 2, TPC 0, SM 1): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x5257b0=0x20021 0x5257b4=0x24 0x5257a8=0x1f81fb60 0x5257ac=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 3, TPC 0, SM 0): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x535730=0x20021 0x535734=0x24 0x535728=0x1f81fb60 0x53572c=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 3, TPC 0, SM 1): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x5357b0=0x20021 0x5357b4=0x24 0x5357a8=0x1f81fb60 0x5357ac=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 4, TPC 0, SM 0): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x545730=0x20021 0x545734=0x24 0x545728=0x1f81fb60 0x54572c=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics SM Global Exception on (GPC 4, TPC 0, SM 1): Multiple Warp Errors
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 13, Graphics Exception: ESR 0x5457b0=0x20021 0x5457b4=0x24 0x5457a8=0x1f81fb60 0x5457ac=0x1174
+
+[gpu-health] [WARN] GPU-73f3be23-f629-0be6-d85f-690b4b1ee76e: XID: NVRM: Xid (PCI:0000:cb:00): 43, pid=4173870, name=exe, channel 0x00000002
+
+tests/test_step05.py::test_pipeline[512] FAILED
+tests/test_step05.py::test_pipeline[1024] FAILED
+tests/test_step05.py::test_pipeline[2048] FAILED
+tests/test_step05.py::test_pipeline[4096] FAILED
+
+=================================== FAILURES ===================================
+______________________________ test_pipeline[512] ______________________________
+
+size = 512
+
+    @pytest.mark.parametrize("size", [512, 1024, 2048, 4096])
+    def test_pipeline(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v5(M, N, K)
+        A, B, C = prepare_data(M, N, K)
+        C_tir = compile_and_run(kernel, A, B, C)
+>       verify(C_tir, A, B)
+
+tests/test_step05.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+C_tir = <[AcceleratorError("CUDA error: unspecified launch failure\nSearch for `cudaErrorLaunchFailure' in https://docs.nvidia...pile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n") raised in repr()] Tensor object at 0x2ad3ff210d70>
+A = <[AcceleratorError("CUDA error: unspecified launch failure\nSearch for `cudaErrorLaunchFailure' in https://docs.nvidia...pile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n") raised in repr()] Tensor object at 0x2ad3f521f570>
+B = <[AcceleratorError("CUDA error: unspecified launch failure\nSearch for `cudaErrorLaunchFailure' in https://docs.nvidia...pile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n") raised in repr()] Tensor object at 0x2ad3ff193200>
+rtol = 0.001, atol = 0.01
+
+    def verify(C_tir, A, B, rtol=1e-3, atol=1e-2):
+        """Verify TIRX result against torch.matmul (cuBLAS)."""
+>       C_ref = torch.matmul(A, B.T)
+                ^^^^^^^^^^^^^^^^^^^^
+E       RuntimeError: CUDA error: CUBLAS_STATUS_INTERNAL_ERROR when calling `cublasCreate(handle)`
+
+utils.py:33: RuntimeError
+_____________________________ test_pipeline[1024] ______________________________
+
+size = 1024
+
+    @pytest.mark.parametrize("size", [512, 1024, 2048, 4096])
+    def test_pipeline(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v5(M, N, K)
+>       A, B, C = prepare_data(M, N, K)
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_step05.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+M = 1024, N = 1024, K = 1024, dtype = 'fp16'
+
+    def prepare_data(M, N, K, dtype="fp16"):
+        """Create random A(M,K), B(N,K), C(M,N) on GPU."""
+        torch_dev = torch.device("cuda")
+        if dtype == "fp16":
+            torch_dtype = torch.float16
+        elif dtype == "bf16":
+            torch_dtype = torch.bfloat16
+        else:
+            raise ValueError(f"Unsupported dtype: {dtype}")
+>       A = torch.randn(M, K, dtype=torch_dtype, device=torch_dev)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       torch.AcceleratorError: CUDA error: unspecified launch failure
+E       Search for `cudaErrorLaunchFailure' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+E       CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+E       For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+E       Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+utils.py:14: AcceleratorError
+_____________________________ test_pipeline[2048] ______________________________
+
+size = 2048
+
+    @pytest.mark.parametrize("size", [512, 1024, 2048, 4096])
+    def test_pipeline(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v5(M, N, K)
+>       A, B, C = prepare_data(M, N, K)
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_step05.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+M = 2048, N = 2048, K = 2048, dtype = 'fp16'
+
+    def prepare_data(M, N, K, dtype="fp16"):
+        """Create random A(M,K), B(N,K), C(M,N) on GPU."""
+        torch_dev = torch.device("cuda")
+        if dtype == "fp16":
+            torch_dtype = torch.float16
+        elif dtype == "bf16":
+            torch_dtype = torch.bfloat16
+        else:
+            raise ValueError(f"Unsupported dtype: {dtype}")
+>       A = torch.randn(M, K, dtype=torch_dtype, device=torch_dev)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       torch.AcceleratorError: CUDA error: unspecified launch failure
+E       Search for `cudaErrorLaunchFailure' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+E       CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+E       For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+E       Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+utils.py:14: AcceleratorError
+_____________________________ test_pipeline[4096] ______________________________
+
+size = 4096
+
+    @pytest.mark.parametrize("size", [512, 1024, 2048, 4096])
+    def test_pipeline(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v5(M, N, K)
+>       A, B, C = prepare_data(M, N, K)
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_step05.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+M = 4096, N = 4096, K = 4096, dtype = 'fp16'
+
+    def prepare_data(M, N, K, dtype="fp16"):
+        """Create random A(M,K), B(N,K), C(M,N) on GPU."""
+        torch_dev = torch.device("cuda")
+        if dtype == "fp16":
+            torch_dtype = torch.float16
+        elif dtype == "bf16":
+            torch_dtype = torch.bfloat16
+        else:
+            raise ValueError(f"Unsupported dtype: {dtype}")
+>       A = torch.randn(M, K, dtype=torch_dtype, device=torch_dev)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       torch.AcceleratorError: CUDA error: unspecified launch failure
+E       Search for `cudaErrorLaunchFailure' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+E       CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+E       For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+E       Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+utils.py:14: AcceleratorError
+=========================== short test summary info ============================
+FAILED tests/test_step05.py::test_pipeline[512] - RuntimeError: CUDA error: C...
+FAILED tests/test_step05.py::test_pipeline[1024] - torch.AcceleratorError: CU...
+FAILED tests/test_step05.py::test_pipeline[2048] - torch.AcceleratorError: CU...
+FAILED tests/test_step05.py::test_pipeline[4096] - torch.AcceleratorError: CU...
+============================== 4 failed in 8.84s ===============================
+  Step 5 FAILED (exit code 1)
+
+Failed steps: [5]
+Stopping app - uncaught exception raised locally: SystemExit(1).
+Runner terminated.
+
+========================================
+Run completed at Mon Apr  6 07:42:20 EDT 2026

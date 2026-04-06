@@ -606,11 +606,6 @@ def hgemm_v5(M, N, K):
             Bsmem = pool.alloc((PIPE_DEPTH, BLK_N, BLK_K), b_type, layout=B_layout)
 
             # NOTE: Reset the base to 1024 so Dsmem reuses Asmem/Bsmem space.
-            # Exists because I tried setting EPI_N to 128 originally,
-            # BLK_M * BLK_K + BLK_N + BLK_K + BLK_M * EPI_N elements
-            # = 128 * 64 * 2 + 128 * 128 = 128 * 128 * 2 = 32,768 elements,
-            # F16_SIZE = 2 bytes per element, exceeds 48KB SMEM limit.
-            # Re-use means we only use 128 * 128 * 2 = 32768 bytes, under the 48KB limit.
             pool.move_base_to(1024)
             Dsmem = pool.alloc((BLK_M, EPI_N), d_type, layout=D_layout)
             pool.commit()
@@ -619,7 +614,9 @@ def hgemm_v5(M, N, K):
             if warp_id == 0:
                 if lane_id == 0:
                     Tx.ptx.mbarrier.init(mma_bar.ptr_to([0]), 1)
-                    Tx.ptx.mbarrier.init(tma_bar.ptr_to([0]), 1)
+                    for i in range(PIPE_DEPTH):
+                        Tx.ptx.mbarrier.init(tma_bar.ptr_to([i]), 1)
+
                 Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
 
             Tx.ptx.fence.proxy_async("shared::cta")
@@ -650,7 +647,7 @@ def hgemm_v5(M, N, K):
             def mma(accum, stage):
                 # ---  Waits on tma_bar (data ready) ---
                 Tx.ptx.mbarrier.try_wait(tma_bar.ptr_to([stage]), phase_tma)  # pyright: ignore[reportUnboundVariable]  # noqa: F823
-                if stage == 0:  # phase flips when stage wraps to zero
+                if stage == PIPE_DEPTH - 1:  # phase flips when stage would wrap to zero
                     phase_tma ^= 1  # pyright: ignore[reportUnboundVariable]  # noqa: F841
                 Tx.ptx.tcgen05.fence.after_thread_sync()
 
@@ -675,10 +672,14 @@ def hgemm_v5(M, N, K):
                 # For each K tile, wait for load to finish, compute, then issue the next load.
                 for k in range(K_TILES):
                     stage = k % PIPE_DEPTH
-                    k_st = k * BLK_K
-
-                    tma_load(k_st, stage)
+                    
+                    # Waits on load to finish, then compute the current tile
                     mma(k != 0, stage)
+                    
+                    # Issue the load for the future tile into the newly freed stage
+                    next_k = k + PRE_NUM
+                    if next_k < K_TILES:
+                        tma_load(next_k * BLK_K, stage)
 
             # SYNC RULE: MMA writes TMEM -> Threads read TMEM
             Tx.cuda.warpgroup_sync(10)
@@ -724,6 +725,8 @@ def hgemm_v5(M, N, K):
 
                 # Sync before next iteration
                 Tx.cuda.warpgroup_sync(10)
+
+            Tx.cuda.cta_sync()
 
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)

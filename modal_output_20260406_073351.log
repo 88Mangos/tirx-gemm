@@ -1,0 +1,192 @@
+========================================
+Modal run output - Started at Mon Apr  6 07:33:51 EDT 2026
+Steps: 5
+========================================
+Running: modal run run_modal.py --step 5
+
+✓ Initialized. View run at https://modal.com/apps/tylery/main/ap-I7cfvFgcU0JOOv5to6lvzH
+✓ Created objects.
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm/run_modal.py
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm
+├── 🔨 Created function run_tests.
+└── 🔨 Created function run_inspect.
+Running step 5: tests/test_step05.py
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 13.0.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace
+configfile: pyproject.toml
+[11:34:56] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[11:34:56] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[11:34:56] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[11:34:56] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[11:34:56] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[11:34:56] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+collecting ... collected 4 items
+
+[gpu-health] [WARN] GPU-fd15ab2b-55d6-8c81-0bb4-f24633a1cc95: XID: NVRM: Xid (PCI:0000:51:00): 43, pid=636580, name=exe, channel 0x00000002
+
+tests/test_step05.py::test_pipeline[512] FAILED
+tests/test_step05.py::test_pipeline[1024] FAILED
+tests/test_step05.py::test_pipeline[2048] FAILED
+tests/test_step05.py::test_pipeline[4096] FAILED
+
+=================================== FAILURES ===================================
+______________________________ test_pipeline[512] ______________________________
+
+size = 512
+
+    @pytest.mark.parametrize("size", [512, 1024, 2048, 4096])
+    def test_pipeline(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v5(M, N, K)
+        A, B, C = prepare_data(M, N, K)
+        C_tir = compile_and_run(kernel, A, B, C)
+>       verify(C_tir, A, B)
+
+tests/test_step05.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+C_tir = <[AcceleratorError("CUDA error: unspecified launch failure\nSearch for `cudaErrorLaunchFailure' in https://docs.nvidia...pile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n") raised in repr()] Tensor object at 0x2a827a01c6e0>
+A = <[AcceleratorError("CUDA error: unspecified launch failure\nSearch for `cudaErrorLaunchFailure' in https://docs.nvidia...pile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n") raised in repr()] Tensor object at 0x2a82833ca6c0>
+B = <[AcceleratorError("CUDA error: unspecified launch failure\nSearch for `cudaErrorLaunchFailure' in https://docs.nvidia...pile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n") raised in repr()] Tensor object at 0x2a8283392f30>
+rtol = 0.001, atol = 0.01
+
+    def verify(C_tir, A, B, rtol=1e-3, atol=1e-2):
+        """Verify TIRX result against torch.matmul (cuBLAS)."""
+>       C_ref = torch.matmul(A, B.T)
+                ^^^^^^^^^^^^^^^^^^^^
+E       RuntimeError: CUDA error: CUBLAS_STATUS_INTERNAL_ERROR when calling `cublasCreate(handle)`
+
+utils.py:33: RuntimeError
+_____________________________ test_pipeline[1024] ______________________________
+
+size = 1024
+
+    @pytest.mark.parametrize("size", [512, 1024, 2048, 4096])
+    def test_pipeline(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v5(M, N, K)
+>       A, B, C = prepare_data(M, N, K)
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_step05.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+M = 1024, N = 1024, K = 1024, dtype = 'fp16'
+
+    def prepare_data(M, N, K, dtype="fp16"):
+        """Create random A(M,K), B(N,K), C(M,N) on GPU."""
+        torch_dev = torch.device("cuda")
+        if dtype == "fp16":
+            torch_dtype = torch.float16
+        elif dtype == "bf16":
+            torch_dtype = torch.bfloat16
+        else:
+            raise ValueError(f"Unsupported dtype: {dtype}")
+>       A = torch.randn(M, K, dtype=torch_dtype, device=torch_dev)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       torch.AcceleratorError: CUDA error: unspecified launch failure
+E       Search for `cudaErrorLaunchFailure' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+E       CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+E       For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+E       Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+utils.py:14: AcceleratorError
+_____________________________ test_pipeline[2048] ______________________________
+
+size = 2048
+
+    @pytest.mark.parametrize("size", [512, 1024, 2048, 4096])
+    def test_pipeline(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v5(M, N, K)
+>       A, B, C = prepare_data(M, N, K)
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_step05.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+M = 2048, N = 2048, K = 2048, dtype = 'fp16'
+
+    def prepare_data(M, N, K, dtype="fp16"):
+        """Create random A(M,K), B(N,K), C(M,N) on GPU."""
+        torch_dev = torch.device("cuda")
+        if dtype == "fp16":
+            torch_dtype = torch.float16
+        elif dtype == "bf16":
+            torch_dtype = torch.bfloat16
+        else:
+            raise ValueError(f"Unsupported dtype: {dtype}")
+>       A = torch.randn(M, K, dtype=torch_dtype, device=torch_dev)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       torch.AcceleratorError: CUDA error: unspecified launch failure
+E       Search for `cudaErrorLaunchFailure' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+E       CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+E       For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+E       Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+utils.py:14: AcceleratorError
+_____________________________ test_pipeline[4096] ______________________________
+
+size = 4096
+
+    @pytest.mark.parametrize("size", [512, 1024, 2048, 4096])
+    def test_pipeline(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v5(M, N, K)
+>       A, B, C = prepare_data(M, N, K)
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_step05.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+M = 4096, N = 4096, K = 4096, dtype = 'fp16'
+
+    def prepare_data(M, N, K, dtype="fp16"):
+        """Create random A(M,K), B(N,K), C(M,N) on GPU."""
+        torch_dev = torch.device("cuda")
+        if dtype == "fp16":
+            torch_dtype = torch.float16
+        elif dtype == "bf16":
+            torch_dtype = torch.bfloat16
+        else:
+            raise ValueError(f"Unsupported dtype: {dtype}")
+>       A = torch.randn(M, K, dtype=torch_dtype, device=torch_dev)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       torch.AcceleratorError: CUDA error: unspecified launch failure
+E       Search for `cudaErrorLaunchFailure' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+E       CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+E       For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+E       Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+utils.py:14: AcceleratorError
+=========================== short test summary info ============================
+FAILED tests/test_step05.py::test_pipeline[512] - RuntimeError: CUDA error: C...
+FAILED tests/test_step05.py::test_pipeline[1024] - torch.AcceleratorError: CU...
+FAILED tests/test_step05.py::test_pipeline[2048] - torch.AcceleratorError: CU...
+FAILED tests/test_step05.py::test_pipeline[4096] - torch.AcceleratorError: CU...
+============================== 4 failed in 10.77s ==============================
+  Step 5 FAILED (exit code 1)
+
+Failed steps: [5]
+Stopping app - uncaught exception raised locally: SystemExit(1).
+Runner terminated.
+
+========================================
+Run completed at Mon Apr  6 07:35:08 EDT 2026
