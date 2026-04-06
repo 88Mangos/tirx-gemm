@@ -15,6 +15,7 @@ F16_SIZE = 2
 #   M=128, N=128, K=64 — exactly one tile, no loops.
 #   All threads sync-load GMEM→SMEM, one MMA, sync writeback.
 # ======================================================================
+# MARK: Step 1
 def hgemm_v1(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -131,6 +132,7 @@ def hgemm_v1(M, N, K):
 #   M=128, N=128, K=any multiple of 64.
 #   Loop over K dimension with accumulation.
 # ======================================================================
+# MARK: Step 2
 def hgemm_v2(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -245,6 +247,7 @@ def hgemm_v2(M, N, K):
 #   M, N any multiples of 128, K any multiple of 64.
 #   Grid of (M/128)×(N/128) CTAs.
 # ======================================================================
+# MARK: Step 3
 def hgemm_v3(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -358,6 +361,7 @@ def hgemm_v3(M, N, K):
 #   Replace sync load with TMA (single-thread dispatch, mbarrier sync).
 #   Writeback uses TMA store: TMEM → RF → SMEM → TMA → GMEM.
 # ======================================================================
+# MARK: Step 4
 def hgemm_v4(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -517,6 +521,7 @@ def hgemm_v4(M, N, K):
 # Step 5: Software pipeline
 #   PIPE_DEPTH=2 multi-buffered SMEM. Prefetch + overlap.
 # ======================================================================
+# MARK: Step 5
 def hgemm_v5(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -556,6 +561,7 @@ def hgemm_v5(M, N, K):
 # Step 6: Persistent kernel + tile scheduler
 #   Fixed SM_COUNT CTAs, loop over tiles with L2-friendly ordering.
 # ======================================================================
+# MARK: Step 6
 def hgemm_v6(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -597,6 +603,7 @@ def hgemm_v6(M, N, K):
 #   4 barrier types: tma2mma, mma2tma, mma2ld, ld2mma
 #   PIPE_DEPTH=2 (same as step 6, focus on warp spec structure)
 # ======================================================================
+# MARK: Step 7
 def hgemm_v7(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -647,6 +654,7 @@ def hgemm_v7(M, N, K):
 #   to better hide TMA latency. Only changes: PIPE_DEPTH=2 → 4,
 #   which affects barrier array sizes and Asmem/Bsmem stage dimensions.
 # ======================================================================
+# MARK: Step 8
 def hgemm_v8(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -687,6 +695,7 @@ def hgemm_v8(M, N, K):
 # Step 9: Cluster — 2-CTA cooperation
 #   CTA_GROUP=2, MMA_M=MMA_N=256, cross-CTA TMEM sharing.
 # ======================================================================
+# MARK: Step 9
 def hgemm_v9(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
@@ -733,6 +742,7 @@ def hgemm_v9(M, N, K):
 #   NUM_CONSUMER=2, WG2 (TMA+MMA), WG0/WG1 (writeback).
 #   This is the final optimized kernel.
 # ======================================================================
+# MARK: Step 10
 def hgemm_v10(M, N, K):
     a_type = tvm.DataType("float16")
     b_type = tvm.DataType("float16")
