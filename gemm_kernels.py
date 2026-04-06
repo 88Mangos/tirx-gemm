@@ -672,10 +672,10 @@ def hgemm_v5(M, N, K):
                 # For each K tile, wait for load to finish, compute, then issue the next load.
                 for k in range(K_TILES):
                     stage = k % PIPE_DEPTH
-                    
+
                     # Waits on load to finish, then compute the current tile
                     mma(k != 0, stage)
-                    
+
                     # Issue the load for the future tile into the newly freed stage
                     next_k = k + PRE_NUM
                     if next_k < K_TILES:
@@ -749,6 +749,15 @@ def hgemm_v6(M, N, K):
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_N, BLK_K))
 
+    # Launch SM_COUNT persistent CTAs.
+    # Use ClusterPersistentScheduler2D for tile iteration.
+    #
+    # Key changes from step 5:
+    #   - bx = Tx.cta_id([SM_COUNT], parent="kernel")
+    #   - tile_scheduler = ClusterPersistentScheduler2D(...)
+    #   - while tile_scheduler.valid(): ... tile_scheduler.next_tile()
+    #   - m_st/n_st from tile_scheduler.m_idx/n_idx
+
     @Tx.prim_func(tirx=True)
     def kernel(
         A: Tx.Buffer((M, K), a_type),
@@ -756,15 +765,8 @@ def hgemm_v6(M, N, K):
         D: Tx.Buffer((M, N), d_type),
     ):
         with Tx.kernel():
-            # TODO: Launch SM_COUNT persistent CTAs.
-            # Use ClusterPersistentScheduler2D for tile iteration.
-            #
-            # Key changes from step 5:
-            #   - bx = Tx.cta_id([SM_COUNT], parent="kernel")
-            #   - tile_scheduler = ClusterPersistentScheduler2D(...)
-            #   - while tile_scheduler.valid(): ... tile_scheduler.next_tile()
-            #   - m_st/n_st from tile_scheduler.m_idx/n_idx
-            pass
+            bx = Tx.cta_id([SM_COUNT], parent="kernel")
+            tile_scheduler = ClusterPersistentScheduler2D(...)
 
     return kernel
 
