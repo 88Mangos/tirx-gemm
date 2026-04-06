@@ -1,0 +1,128 @@
+========================================
+Modal run output - Started at Sun Apr  5 23:06:46 EDT 2026
+Steps: 1,2,3,4
+========================================
+Running: modal run run_modal.py --step 1,2,3,4
+
+✓ Initialized. View run at https://modal.com/apps/tylery/main/ap-q2B1D6kmYnrBEv4M1JAXr6
+✓ Created objects.
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm/run_modal.py
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm
+├── 🔨 Created function run_tests.
+└── 🔨 Created function run_inspect.
+Running step 1: tests/test_step01.py
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 13.0.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace
+configfile: pyproject.toml
+[03:06:58] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:06:58] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:06:58] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:06:58] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:06:58] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:06:58] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+collecting ... collected 1 item
+
+tests/test_step01.py::test_single_tile M=128, N=128, K=64: 0.02 TFLOP/S
+PASSED
+
+============================== 1 passed in 8.50s ===============================
+  Step 1 passed.
+Running step 2: tests/test_step02.py
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace
+configfile: pyproject.toml
+[03:07:07] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:07] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:07] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:07] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:07] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:07] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+collecting ... collected 4 items
+
+tests/test_step02.py::test_k_loop[64] M=128, N=128, K=64: 0.02 TFLOP/S
+PASSED
+tests/test_step02.py::test_k_loop[512] M=128, N=128, K=512: 0.02 TFLOP/S
+PASSED
+tests/test_step02.py::test_k_loop[1024] M=128, N=128, K=1024: 0.02 TFLOP/S
+PASSED
+tests/test_step02.py::test_k_loop[4096] M=128, N=128, K=4096: 0.02 TFLOP/S
+PASSED
+
+============================== 4 passed in 12.99s ==============================
+  Step 2 passed.
+Running step 3: tests/test_step03.py
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace
+configfile: pyproject.toml
+[03:07:22] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:22] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:22] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:22] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:22] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:22] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+collecting ... collected 4 items
+
+tests/test_step03.py::test_spatial_tiling[256] M=256, N=256, K=256: 0.09 TFLOP/S
+PASSED
+tests/test_step03.py::test_spatial_tiling[512] M=512, N=512, K=512: 0.36 TFLOP/S
+PASSED
+tests/test_step03.py::test_spatial_tiling[1024] M=1024, N=1024, K=1024: 1.42 TFLOP/S
+PASSED
+tests/test_step03.py::test_spatial_tiling[2048] M=2048, N=2048, K=2048: 2.86 TFLOP/S
+PASSED
+
+============================== 4 passed in 12.52s ==============================
+  Step 3 passed.
+Running step 4: tests/test_step04.py
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace
+configfile: pyproject.toml
+[03:07:35] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:35] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:35] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:35] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:35] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:07:35] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+collecting ... collected 4 items
+
+tests/test_step04.py::test_tma_async[256] M=256, N=256, K=256: 3.06 TFLOP/S
+PASSED
+tests/test_step04.py::test_tma_async[512] M=512, N=512, K=512: 25.58 TFLOP/S
+PASSED
+tests/test_step04.py::test_tma_async[1024] M=1024, N=1024, K=1024: 127.31 TFLOP/S
+PASSED
+tests/test_step04.py::test_tma_async[2048] M=2048, N=2048, K=2048: 331.87 TFLOP/S
+PASSED
+
+============================== 4 passed in 12.47s ==============================
+  Step 4 passed.
+
+All tests passed!
+Stopping app - local entrypoint completed.
+✓ App completed. View run at https://modal.com/apps/tylery/main/ap-q2B1D6kmYnrBEv4M1JAXr6
+
+========================================
+Run completed at Sun Apr  5 23:07:47 EDT 2026
