@@ -152,7 +152,13 @@ class ptx:
 
     class mbarrier:
         @staticmethod
-        def init(ptr: Any, count: int) -> None: ...
+        def init(ptr: Any, count: int) -> None: 
+            """ 
+            mbarrier.init(ptr, count) Initializes a new MBarrier
+            with expected_count=count, i.e., 
+            the number of arrivals expected to this semaphore
+            """
+            ...
         @staticmethod
         def try_wait(ptr: Any, phase: Any) -> None: ...
         class arrive:
