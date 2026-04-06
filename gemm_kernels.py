@@ -6,7 +6,7 @@ To keep the code readable, only comment for
 - Memory Layouts: High-level notes on tile sizes or swizzling.
 
 To avoid writing semantically meaningless code, magic numbers have been declared at the global scope.
-NOTE: [from README.md]: Constants must be defined outside @Tx.prim_func.
+NOTE: [from README.md] Constants must be defined outside @Tx.prim_func.
   Variables like EPI_N, TMEM_LD_N, MMA_N must be Python constants defined alongside BLK_M, BLK_K, etc.
   Variables assigned inside the kernel function become TIR dynamic variables, which causes errors when used in buffer slicing.
 
@@ -20,6 +20,10 @@ CTA         : collaborative thread array
 WG          : warpgroup
 
 *_st        : [*] stride
+
+NOTE: [from README.md, step 4] Use @Tx.inline to define helper functions (e.g., tma_load, mma) inside the kernel.
+  These are inlined at compile time and can capture outer variables like Asmem, tma_bar, etc.
+  I use "# pyright: ignore[reportUnboundVariable]" whenever Pyright fails to capture the variable and allow it to be modified.
 """
 
 import tvm
@@ -479,13 +483,13 @@ def hgemm_v4(M, N, K):
             #   3. Waits on mma_bar (MMA done)
             @Tx.inline
             def mma(accum):
-                Tx.ptx.mbarrier.try_wait(tma_bar.ptr_to([0]), phase_tma)  # wait TMA done
-                phase_tma ^= 1
+                Tx.ptx.mbarrier.try_wait(tma_bar.ptr_to([0]), phase_tma)  # pyright: ignore[reportUnboundVariable] # wait TMA done
+                phase_tma ^= 1  # pyright: ignore[reportUnboundVariable]
                 Tx.ptx.tcgen05.fence.after_thread_sync()
                 Tx.gemm_async(tmem[:, :BLK_N], Asmem[:, :], Bsmem[:, :], accum=accum, dispatch="tcgen05", cta_group=1)
                 Tx.ptx.tcgen05.commit(mma_bar.ptr_to([0]), cta_group=1)  # signal MMA done
-                Tx.ptx.mbarrier.try_wait(mma_bar.ptr_to([0]), phase_mma)  # wait MMA done
-                phase_mma ^= 1
+                Tx.ptx.mbarrier.try_wait(mma_bar.ptr_to([0]), phase_mma)  # pyright: ignore[reportUnboundVariable]  # wait MMA done
+                phase_mma ^= 1  # pyright: ignore[reportUnboundVariable]
 
             # Main loop (elected thread of warp 0):
 
