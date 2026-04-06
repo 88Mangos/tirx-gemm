@@ -1,0 +1,192 @@
+========================================
+Modal run output - Started at Mon Apr  6 09:41:05 EDT 2026
+Steps: 6
+========================================
+Running: modal run run_modal.py --step 6
+
+✓ Initialized. View run at https://modal.com/apps/tylery/main/ap-NioxR24lbKGpiLuegV5hxy
+✓ Created objects.
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm/run_modal.py
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm
+├── 🔨 Created function run_tests.
+└── 🔨 Created function run_inspect.
+Running step 6: tests/test_step06.py
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 13.0.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace
+configfile: pyproject.toml
+[13:41:22] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[13:41:22] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[13:41:22] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[13:41:22] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[13:41:22] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[13:41:22] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+collecting ... collected 4 items
+
+[gpu-health] [WARN] GPU-c96ab7ea-12e2-9d6e-7717-46889dffc06a: XID: NVRM: Xid (PCI:0000:52:00): 43, pid=1045708, name=exe, channel 0x00000002
+
+tests/test_step06.py::test_persistent[1024] FAILED
+tests/test_step06.py::test_persistent[2048] FAILED
+tests/test_step06.py::test_persistent[4096] FAILED
+tests/test_step06.py::test_persistent[8192] FAILED
+
+=================================== FAILURES ===================================
+____________________________ test_persistent[1024] _____________________________
+
+size = 1024
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_persistent(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v6(M, N, K)
+        A, B, C = prepare_data(M, N, K)
+        C_tir = compile_and_run(kernel, A, B, C)
+>       verify(C_tir, A, B)
+
+tests/test_step06.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+C_tir = <[AcceleratorError("CUDA error: tensor memory not completely freed\nSearch for `cudaErrorTensorMemoryLeak' in https://...pile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n") raised in repr()] Tensor object at 0x2ab7d0818780>
+A = <[AcceleratorError("CUDA error: tensor memory not completely freed\nSearch for `cudaErrorTensorMemoryLeak' in https://...pile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n") raised in repr()] Tensor object at 0x2ab7d0788f00>
+B = <[AcceleratorError("CUDA error: tensor memory not completely freed\nSearch for `cudaErrorTensorMemoryLeak' in https://...pile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n") raised in repr()] Tensor object at 0x2ab7d08187d0>
+rtol = 0.001, atol = 0.01
+
+    def verify(C_tir, A, B, rtol=1e-3, atol=1e-2):
+        """Verify TIRX result against torch.matmul (cuBLAS)."""
+>       C_ref = torch.matmul(A, B.T)
+                ^^^^^^^^^^^^^^^^^^^^
+E       RuntimeError: CUDA error: CUBLAS_STATUS_INTERNAL_ERROR when calling `cublasCreate(handle)`
+
+utils.py:33: RuntimeError
+____________________________ test_persistent[2048] _____________________________
+
+size = 2048
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_persistent(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v6(M, N, K)
+>       A, B, C = prepare_data(M, N, K)
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_step06.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+M = 2048, N = 2048, K = 2048, dtype = 'fp16'
+
+    def prepare_data(M, N, K, dtype="fp16"):
+        """Create random A(M,K), B(N,K), C(M,N) on GPU."""
+        torch_dev = torch.device("cuda")
+        if dtype == "fp16":
+            torch_dtype = torch.float16
+        elif dtype == "bf16":
+            torch_dtype = torch.bfloat16
+        else:
+            raise ValueError(f"Unsupported dtype: {dtype}")
+>       A = torch.randn(M, K, dtype=torch_dtype, device=torch_dev)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       torch.AcceleratorError: CUDA error: tensor memory not completely freed
+E       Search for `cudaErrorTensorMemoryLeak' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+E       CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+E       For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+E       Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+utils.py:14: AcceleratorError
+____________________________ test_persistent[4096] _____________________________
+
+size = 4096
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_persistent(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v6(M, N, K)
+>       A, B, C = prepare_data(M, N, K)
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_step06.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+M = 4096, N = 4096, K = 4096, dtype = 'fp16'
+
+    def prepare_data(M, N, K, dtype="fp16"):
+        """Create random A(M,K), B(N,K), C(M,N) on GPU."""
+        torch_dev = torch.device("cuda")
+        if dtype == "fp16":
+            torch_dtype = torch.float16
+        elif dtype == "bf16":
+            torch_dtype = torch.bfloat16
+        else:
+            raise ValueError(f"Unsupported dtype: {dtype}")
+>       A = torch.randn(M, K, dtype=torch_dtype, device=torch_dev)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       torch.AcceleratorError: CUDA error: tensor memory not completely freed
+E       Search for `cudaErrorTensorMemoryLeak' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+E       CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+E       For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+E       Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+utils.py:14: AcceleratorError
+____________________________ test_persistent[8192] _____________________________
+
+size = 8192
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_persistent(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v6(M, N, K)
+>       A, B, C = prepare_data(M, N, K)
+                  ^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_step06.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+M = 8192, N = 8192, K = 8192, dtype = 'fp16'
+
+    def prepare_data(M, N, K, dtype="fp16"):
+        """Create random A(M,K), B(N,K), C(M,N) on GPU."""
+        torch_dev = torch.device("cuda")
+        if dtype == "fp16":
+            torch_dtype = torch.float16
+        elif dtype == "bf16":
+            torch_dtype = torch.bfloat16
+        else:
+            raise ValueError(f"Unsupported dtype: {dtype}")
+>       A = torch.randn(M, K, dtype=torch_dtype, device=torch_dev)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       torch.AcceleratorError: CUDA error: tensor memory not completely freed
+E       Search for `cudaErrorTensorMemoryLeak' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+E       CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+E       For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+E       Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+utils.py:14: AcceleratorError
+=========================== short test summary info ============================
+FAILED tests/test_step06.py::test_persistent[1024] - RuntimeError: CUDA error...
+FAILED tests/test_step06.py::test_persistent[2048] - torch.AcceleratorError: ...
+FAILED tests/test_step06.py::test_persistent[4096] - torch.AcceleratorError: ...
+FAILED tests/test_step06.py::test_persistent[8192] - torch.AcceleratorError: ...
+============================== 4 failed in 10.72s ==============================
+  Step 6 FAILED (exit code 1)
+
+Failed steps: [6]
+Stopping app - uncaught exception raised locally: SystemExit(1).
+Runner terminated.
+
+========================================
+Run completed at Mon Apr  6 09:41:35 EDT 2026

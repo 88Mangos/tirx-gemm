@@ -1,0 +1,1253 @@
+========================================
+Modal run output - Started at Mon Apr  6 08:59:13 EDT 2026
+Steps: 6
+========================================
+Running: modal run run_modal.py --step 6
+
+✓ Initialized. View run at https://modal.com/apps/tylery/main/ap-XadyfOZmprq4gHttAw1BiA
+✓ Created objects.
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm/run_modal.py
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm
+├── 🔨 Created function run_tests.
+└── 🔨 Created function run_inspect.
+Running step 6: tests/test_step06.py
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 13.0.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace
+configfile: pyproject.toml
+[12:59:27] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[12:59:27] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[12:59:27] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[12:59:27] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[12:59:27] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[12:59:27] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+collecting ... collected 4 items
+
+error: Undefined variable: n_st
+ --> /workspace/tests/../gemm_kernels.py:896:17
+     |  
+ 896 |                  n_epi_st = Tx.meta_var(n_st + no_st)
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_step06.py::test_persistent[1024] FAILED
+error: Undefined variable: n_st
+ --> /workspace/tests/../gemm_kernels.py:896:17
+     |  
+ 896 |                  n_epi_st = Tx.meta_var(n_st + no_st)
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_step06.py::test_persistent[2048] FAILED
+error: Undefined variable: n_st
+ --> /workspace/tests/../gemm_kernels.py:896:17
+     |  
+ 896 |                  n_epi_st = Tx.meta_var(n_st + no_st)
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_step06.py::test_persistent[4096] FAILED
+error: Undefined variable: n_st
+ --> /workspace/tests/../gemm_kernels.py:896:17
+     |  
+ 896 |                  n_epi_st = Tx.meta_var(n_st + no_st)
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_step06.py::test_persistent[8192] FAILED
+
+=================================== FAILURES ===================================
+____________________________ test_persistent[1024] _____________________________
+
+self = <tvm.script.parser.core.parser.Parser object at 0x2af5ec722540>
+node = <tvm.script.parser.core.doc_core.Assign object at 0x2af5f6a43920>
+
+    def _wrapper(self: "Parser", node: doc.AST) -> None:
+        try:
+>           return func(self, node)
+                   ^^^^^^^^^^^^^^^^
+
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:381: in visit_assign
+    rhs = self.eval_expr(node.value)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:527: in eval_expr
+    return eval_expr(self, node, var_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:466: in eval_expr
+    return ExprEvaluator.eval(parser, value_table, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:121: in eval
+    result = self._visit(node)  # pylint: disable=protected-access
+             ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:212: in _visit
+    return [self._visit(n) for n in node]
+            ^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tvm.script.parser.core.evaluator.ExprEvaluator object at 0x2af5f6a8e5d0>
+node = <tvm.script.parser.core.doc_core.Name object at 0x2af5f6a43c20>
+
+    def _visit(self, node: doc.AST) -> Any:
+        """General doc AST node visiting method for expression evaluation.
+    
+        Parameters
+        ----------
+        node : doc.AST
+            The root node of AST tree node of expression to evaluate.
+    
+        Returns
+        -------
+        res : Any
+            The evaluation result.
+        """
+        args = []
+        if (
+            isinstance(node, doc.Call)
+            and hasattr(node.func, "attr")
+            and node.func.attr not in ["reads", "writes", "match_buffer"]
+        ) or isinstance(node, doc.BinOp | doc.UnaryOp | doc.Compare | doc.BoolOp | doc.IfExp):
+            if isinstance(node, doc.BinOp):
+                args = [node.left, node.right]
+            elif isinstance(node, doc.UnaryOp):
+                args = [node.operand]
+            elif isinstance(node, doc.Compare):
+                args = [node.left, *node.comparators]
+            elif isinstance(node, doc.IfExp):
+                args = [node.test, node.body, node.orelse]
+            elif isinstance(node, doc.Call):
+                args = node.args
+            elif isinstance(node, doc.BoolOp):
+                args = node.values
+        for arg in args:
+            if isinstance(arg, doc.Subscript) and isinstance(arg.slice, doc.Slice | doc.Tuple):
+                if isinstance(arg.slice, doc.Slice):
+                    check_slices = [arg.slice]
+                else:
+                    check_slices = []
+                    for p in arg.slice.elts:
+                        if isinstance(p, doc.Slice):
+                            check_slices.append(p)
+                for s in check_slices:
+                    if not s.step and s.upper and s.lower:
+                        s.step = doc.Constant(
+                            1,
+                            None,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 1,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 2,
+                        )
+        if isinstance(node, list):
+            return [self._visit(n) for n in node]
+        if isinstance(node, tuple):
+            return tuple(self._visit(n) for n in node)
+        assert isinstance(node, doc.AST)
+        if isinstance(node, doc.Name):
+            if node.id not in self.value_table and not _get_builtin_or_none(node.id):
+>               raise ParserError(node, f"Undefined variable: {node.id}")
+E               tvm.script.parser.core.error.ParserError: Undefined variable: n_st
+
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:218: ParserError
+
+During handling of the above exception, another exception occurred:
+
+size = 1024
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_persistent(size):
+        M, N, K = size, size, size
+>       kernel = hgemm_v6(M, N, K)
+                 ^^^^^^^^^^^^^^^^^
+
+tests/test_step06.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+gemm_kernels.py:768: in hgemm_v6
+    @Tx.prim_func(tirx=True)
+     ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/entry.py:70: in decorator_wrapper
+    f = parse(
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/entry.py:110: in parse
+    parser.parse(extra_vars=extra_vars)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:407: in parse
+    self.visit(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/doc.py:250: in generic_visit
+    self.visit(value)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:650: in visit
+    self.visit(item)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:715: in visit_FunctionDef
+    _dispatch_wrapper(func)(self, node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:639: in visit_function_def
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:799: in visit_With
+    return _dispatch(self, "With")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:584: in visit_with
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:769: in visit_For
+    return _dispatch(self, "For")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:295: in visit_for
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:814: in visit_Assign
+    return _dispatch(self, "Assign")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:633: in report_error
+    raise diag_err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:381: in visit_assign
+    rhs = self.eval_expr(node.value)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:527: in eval_expr
+    return eval_expr(self, node, var_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:466: in eval_expr
+    return ExprEvaluator.eval(parser, value_table, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:121: in eval
+    result = self._visit(node)  # pylint: disable=protected-access
+             ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:212: in _visit
+    return [self._visit(n) for n in node]
+            ^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tvm.script.parser.core.evaluator.ExprEvaluator object at 0x2af5f6a8e5d0>
+node = <tvm.script.parser.core.doc_core.Name object at 0x2af5f6a43c20>
+
+    def _visit(self, node: doc.AST) -> Any:
+        """General doc AST node visiting method for expression evaluation.
+    
+        Parameters
+        ----------
+        node : doc.AST
+            The root node of AST tree node of expression to evaluate.
+    
+        Returns
+        -------
+        res : Any
+            The evaluation result.
+        """
+        args = []
+        if (
+            isinstance(node, doc.Call)
+            and hasattr(node.func, "attr")
+            and node.func.attr not in ["reads", "writes", "match_buffer"]
+        ) or isinstance(node, doc.BinOp | doc.UnaryOp | doc.Compare | doc.BoolOp | doc.IfExp):
+            if isinstance(node, doc.BinOp):
+                args = [node.left, node.right]
+            elif isinstance(node, doc.UnaryOp):
+                args = [node.operand]
+            elif isinstance(node, doc.Compare):
+                args = [node.left, *node.comparators]
+            elif isinstance(node, doc.IfExp):
+                args = [node.test, node.body, node.orelse]
+            elif isinstance(node, doc.Call):
+                args = node.args
+            elif isinstance(node, doc.BoolOp):
+                args = node.values
+        for arg in args:
+            if isinstance(arg, doc.Subscript) and isinstance(arg.slice, doc.Slice | doc.Tuple):
+                if isinstance(arg.slice, doc.Slice):
+                    check_slices = [arg.slice]
+                else:
+                    check_slices = []
+                    for p in arg.slice.elts:
+                        if isinstance(p, doc.Slice):
+                            check_slices.append(p)
+                for s in check_slices:
+                    if not s.step and s.upper and s.lower:
+                        s.step = doc.Constant(
+                            1,
+                            None,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 1,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 2,
+                        )
+        if isinstance(node, list):
+            return [self._visit(n) for n in node]
+        if isinstance(node, tuple):
+            return tuple(self._visit(n) for n in node)
+        assert isinstance(node, doc.AST)
+        if isinstance(node, doc.Name):
+            if node.id not in self.value_table and not _get_builtin_or_none(node.id):
+>               raise ParserError(node, f"Undefined variable: {node.id}")
+E               tvm.error.DiagnosticError: one or more error diagnostics were emitted, please check diagnostic render for output.
+
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:218: DiagnosticError
+____________________________ test_persistent[2048] _____________________________
+
+self = <tvm.script.parser.core.parser.Parser object at 0x2af5f6b04ad0>
+node = <tvm.script.parser.core.doc_core.Assign object at 0x2af60a2224e0>
+
+    def _wrapper(self: "Parser", node: doc.AST) -> None:
+        try:
+>           return func(self, node)
+                   ^^^^^^^^^^^^^^^^
+
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:381: in visit_assign
+    rhs = self.eval_expr(node.value)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:527: in eval_expr
+    return eval_expr(self, node, var_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:466: in eval_expr
+    return ExprEvaluator.eval(parser, value_table, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:121: in eval
+    result = self._visit(node)  # pylint: disable=protected-access
+             ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:212: in _visit
+    return [self._visit(n) for n in node]
+            ^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tvm.script.parser.core.evaluator.ExprEvaluator object at 0x2af5f6b0e750>
+node = <tvm.script.parser.core.doc_core.Name object at 0x2af60a2227e0>
+
+    def _visit(self, node: doc.AST) -> Any:
+        """General doc AST node visiting method for expression evaluation.
+    
+        Parameters
+        ----------
+        node : doc.AST
+            The root node of AST tree node of expression to evaluate.
+    
+        Returns
+        -------
+        res : Any
+            The evaluation result.
+        """
+        args = []
+        if (
+            isinstance(node, doc.Call)
+            and hasattr(node.func, "attr")
+            and node.func.attr not in ["reads", "writes", "match_buffer"]
+        ) or isinstance(node, doc.BinOp | doc.UnaryOp | doc.Compare | doc.BoolOp | doc.IfExp):
+            if isinstance(node, doc.BinOp):
+                args = [node.left, node.right]
+            elif isinstance(node, doc.UnaryOp):
+                args = [node.operand]
+            elif isinstance(node, doc.Compare):
+                args = [node.left, *node.comparators]
+            elif isinstance(node, doc.IfExp):
+                args = [node.test, node.body, node.orelse]
+            elif isinstance(node, doc.Call):
+                args = node.args
+            elif isinstance(node, doc.BoolOp):
+                args = node.values
+        for arg in args:
+            if isinstance(arg, doc.Subscript) and isinstance(arg.slice, doc.Slice | doc.Tuple):
+                if isinstance(arg.slice, doc.Slice):
+                    check_slices = [arg.slice]
+                else:
+                    check_slices = []
+                    for p in arg.slice.elts:
+                        if isinstance(p, doc.Slice):
+                            check_slices.append(p)
+                for s in check_slices:
+                    if not s.step and s.upper and s.lower:
+                        s.step = doc.Constant(
+                            1,
+                            None,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 1,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 2,
+                        )
+        if isinstance(node, list):
+            return [self._visit(n) for n in node]
+        if isinstance(node, tuple):
+            return tuple(self._visit(n) for n in node)
+        assert isinstance(node, doc.AST)
+        if isinstance(node, doc.Name):
+            if node.id not in self.value_table and not _get_builtin_or_none(node.id):
+>               raise ParserError(node, f"Undefined variable: {node.id}")
+E               tvm.script.parser.core.error.ParserError: Undefined variable: n_st
+
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:218: ParserError
+
+During handling of the above exception, another exception occurred:
+
+size = 2048
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_persistent(size):
+        M, N, K = size, size, size
+>       kernel = hgemm_v6(M, N, K)
+                 ^^^^^^^^^^^^^^^^^
+
+tests/test_step06.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+gemm_kernels.py:768: in hgemm_v6
+    @Tx.prim_func(tirx=True)
+     ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/entry.py:70: in decorator_wrapper
+    f = parse(
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/entry.py:110: in parse
+    parser.parse(extra_vars=extra_vars)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:407: in parse
+    self.visit(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/doc.py:250: in generic_visit
+    self.visit(value)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:650: in visit
+    self.visit(item)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:715: in visit_FunctionDef
+    _dispatch_wrapper(func)(self, node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:639: in visit_function_def
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:799: in visit_With
+    return _dispatch(self, "With")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:584: in visit_with
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:769: in visit_For
+    return _dispatch(self, "For")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:295: in visit_for
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:814: in visit_Assign
+    return _dispatch(self, "Assign")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:633: in report_error
+    raise diag_err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:381: in visit_assign
+    rhs = self.eval_expr(node.value)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:527: in eval_expr
+    return eval_expr(self, node, var_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:466: in eval_expr
+    return ExprEvaluator.eval(parser, value_table, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:121: in eval
+    result = self._visit(node)  # pylint: disable=protected-access
+             ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:212: in _visit
+    return [self._visit(n) for n in node]
+            ^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tvm.script.parser.core.evaluator.ExprEvaluator object at 0x2af5f6b0e750>
+node = <tvm.script.parser.core.doc_core.Name object at 0x2af60a2227e0>
+
+    def _visit(self, node: doc.AST) -> Any:
+        """General doc AST node visiting method for expression evaluation.
+    
+        Parameters
+        ----------
+        node : doc.AST
+            The root node of AST tree node of expression to evaluate.
+    
+        Returns
+        -------
+        res : Any
+            The evaluation result.
+        """
+        args = []
+        if (
+            isinstance(node, doc.Call)
+            and hasattr(node.func, "attr")
+            and node.func.attr not in ["reads", "writes", "match_buffer"]
+        ) or isinstance(node, doc.BinOp | doc.UnaryOp | doc.Compare | doc.BoolOp | doc.IfExp):
+            if isinstance(node, doc.BinOp):
+                args = [node.left, node.right]
+            elif isinstance(node, doc.UnaryOp):
+                args = [node.operand]
+            elif isinstance(node, doc.Compare):
+                args = [node.left, *node.comparators]
+            elif isinstance(node, doc.IfExp):
+                args = [node.test, node.body, node.orelse]
+            elif isinstance(node, doc.Call):
+                args = node.args
+            elif isinstance(node, doc.BoolOp):
+                args = node.values
+        for arg in args:
+            if isinstance(arg, doc.Subscript) and isinstance(arg.slice, doc.Slice | doc.Tuple):
+                if isinstance(arg.slice, doc.Slice):
+                    check_slices = [arg.slice]
+                else:
+                    check_slices = []
+                    for p in arg.slice.elts:
+                        if isinstance(p, doc.Slice):
+                            check_slices.append(p)
+                for s in check_slices:
+                    if not s.step and s.upper and s.lower:
+                        s.step = doc.Constant(
+                            1,
+                            None,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 1,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 2,
+                        )
+        if isinstance(node, list):
+            return [self._visit(n) for n in node]
+        if isinstance(node, tuple):
+            return tuple(self._visit(n) for n in node)
+        assert isinstance(node, doc.AST)
+        if isinstance(node, doc.Name):
+            if node.id not in self.value_table and not _get_builtin_or_none(node.id):
+>               raise ParserError(node, f"Undefined variable: {node.id}")
+E               tvm.error.DiagnosticError: one or more error diagnostics were emitted, please check diagnostic render for output.
+
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:218: DiagnosticError
+____________________________ test_persistent[4096] _____________________________
+
+self = <tvm.script.parser.core.parser.Parser object at 0x2af5f6b0ebd0>
+node = <tvm.script.parser.core.doc_core.Assign object at 0x2af60a2183e0>
+
+    def _wrapper(self: "Parser", node: doc.AST) -> None:
+        try:
+>           return func(self, node)
+                   ^^^^^^^^^^^^^^^^
+
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:381: in visit_assign
+    rhs = self.eval_expr(node.value)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:527: in eval_expr
+    return eval_expr(self, node, var_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:466: in eval_expr
+    return ExprEvaluator.eval(parser, value_table, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:121: in eval
+    result = self._visit(node)  # pylint: disable=protected-access
+             ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:212: in _visit
+    return [self._visit(n) for n in node]
+            ^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tvm.script.parser.core.evaluator.ExprEvaluator object at 0x2af5f6b1bfb0>
+node = <tvm.script.parser.core.doc_core.Name object at 0x2af60a2186e0>
+
+    def _visit(self, node: doc.AST) -> Any:
+        """General doc AST node visiting method for expression evaluation.
+    
+        Parameters
+        ----------
+        node : doc.AST
+            The root node of AST tree node of expression to evaluate.
+    
+        Returns
+        -------
+        res : Any
+            The evaluation result.
+        """
+        args = []
+        if (
+            isinstance(node, doc.Call)
+            and hasattr(node.func, "attr")
+            and node.func.attr not in ["reads", "writes", "match_buffer"]
+        ) or isinstance(node, doc.BinOp | doc.UnaryOp | doc.Compare | doc.BoolOp | doc.IfExp):
+            if isinstance(node, doc.BinOp):
+                args = [node.left, node.right]
+            elif isinstance(node, doc.UnaryOp):
+                args = [node.operand]
+            elif isinstance(node, doc.Compare):
+                args = [node.left, *node.comparators]
+            elif isinstance(node, doc.IfExp):
+                args = [node.test, node.body, node.orelse]
+            elif isinstance(node, doc.Call):
+                args = node.args
+            elif isinstance(node, doc.BoolOp):
+                args = node.values
+        for arg in args:
+            if isinstance(arg, doc.Subscript) and isinstance(arg.slice, doc.Slice | doc.Tuple):
+                if isinstance(arg.slice, doc.Slice):
+                    check_slices = [arg.slice]
+                else:
+                    check_slices = []
+                    for p in arg.slice.elts:
+                        if isinstance(p, doc.Slice):
+                            check_slices.append(p)
+                for s in check_slices:
+                    if not s.step and s.upper and s.lower:
+                        s.step = doc.Constant(
+                            1,
+                            None,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 1,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 2,
+                        )
+        if isinstance(node, list):
+            return [self._visit(n) for n in node]
+        if isinstance(node, tuple):
+            return tuple(self._visit(n) for n in node)
+        assert isinstance(node, doc.AST)
+        if isinstance(node, doc.Name):
+            if node.id not in self.value_table and not _get_builtin_or_none(node.id):
+>               raise ParserError(node, f"Undefined variable: {node.id}")
+E               tvm.script.parser.core.error.ParserError: Undefined variable: n_st
+
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:218: ParserError
+
+During handling of the above exception, another exception occurred:
+
+size = 4096
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_persistent(size):
+        M, N, K = size, size, size
+>       kernel = hgemm_v6(M, N, K)
+                 ^^^^^^^^^^^^^^^^^
+
+tests/test_step06.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+gemm_kernels.py:768: in hgemm_v6
+    @Tx.prim_func(tirx=True)
+     ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/entry.py:70: in decorator_wrapper
+    f = parse(
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/entry.py:110: in parse
+    parser.parse(extra_vars=extra_vars)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:407: in parse
+    self.visit(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/doc.py:250: in generic_visit
+    self.visit(value)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:650: in visit
+    self.visit(item)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:715: in visit_FunctionDef
+    _dispatch_wrapper(func)(self, node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:639: in visit_function_def
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:799: in visit_With
+    return _dispatch(self, "With")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:584: in visit_with
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:769: in visit_For
+    return _dispatch(self, "For")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:295: in visit_for
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:814: in visit_Assign
+    return _dispatch(self, "Assign")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:633: in report_error
+    raise diag_err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:381: in visit_assign
+    rhs = self.eval_expr(node.value)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:527: in eval_expr
+    return eval_expr(self, node, var_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:466: in eval_expr
+    return ExprEvaluator.eval(parser, value_table, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:121: in eval
+    result = self._visit(node)  # pylint: disable=protected-access
+             ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:212: in _visit
+    return [self._visit(n) for n in node]
+            ^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tvm.script.parser.core.evaluator.ExprEvaluator object at 0x2af5f6b1bfb0>
+node = <tvm.script.parser.core.doc_core.Name object at 0x2af60a2186e0>
+
+    def _visit(self, node: doc.AST) -> Any:
+        """General doc AST node visiting method for expression evaluation.
+    
+        Parameters
+        ----------
+        node : doc.AST
+            The root node of AST tree node of expression to evaluate.
+    
+        Returns
+        -------
+        res : Any
+            The evaluation result.
+        """
+        args = []
+        if (
+            isinstance(node, doc.Call)
+            and hasattr(node.func, "attr")
+            and node.func.attr not in ["reads", "writes", "match_buffer"]
+        ) or isinstance(node, doc.BinOp | doc.UnaryOp | doc.Compare | doc.BoolOp | doc.IfExp):
+            if isinstance(node, doc.BinOp):
+                args = [node.left, node.right]
+            elif isinstance(node, doc.UnaryOp):
+                args = [node.operand]
+            elif isinstance(node, doc.Compare):
+                args = [node.left, *node.comparators]
+            elif isinstance(node, doc.IfExp):
+                args = [node.test, node.body, node.orelse]
+            elif isinstance(node, doc.Call):
+                args = node.args
+            elif isinstance(node, doc.BoolOp):
+                args = node.values
+        for arg in args:
+            if isinstance(arg, doc.Subscript) and isinstance(arg.slice, doc.Slice | doc.Tuple):
+                if isinstance(arg.slice, doc.Slice):
+                    check_slices = [arg.slice]
+                else:
+                    check_slices = []
+                    for p in arg.slice.elts:
+                        if isinstance(p, doc.Slice):
+                            check_slices.append(p)
+                for s in check_slices:
+                    if not s.step and s.upper and s.lower:
+                        s.step = doc.Constant(
+                            1,
+                            None,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 1,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 2,
+                        )
+        if isinstance(node, list):
+            return [self._visit(n) for n in node]
+        if isinstance(node, tuple):
+            return tuple(self._visit(n) for n in node)
+        assert isinstance(node, doc.AST)
+        if isinstance(node, doc.Name):
+            if node.id not in self.value_table and not _get_builtin_or_none(node.id):
+>               raise ParserError(node, f"Undefined variable: {node.id}")
+E               tvm.error.DiagnosticError: one or more error diagnostics were emitted, please check diagnostic render for output.
+
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:218: DiagnosticError
+____________________________ test_persistent[8192] _____________________________
+
+self = <tvm.script.parser.core.parser.Parser object at 0x2af5f6b1b920>
+node = <tvm.script.parser.core.doc_core.Assign object at 0x2af60a1ce270>
+
+    def _wrapper(self: "Parser", node: doc.AST) -> None:
+        try:
+>           return func(self, node)
+                   ^^^^^^^^^^^^^^^^
+
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:381: in visit_assign
+    rhs = self.eval_expr(node.value)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:527: in eval_expr
+    return eval_expr(self, node, var_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:466: in eval_expr
+    return ExprEvaluator.eval(parser, value_table, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:121: in eval
+    result = self._visit(node)  # pylint: disable=protected-access
+             ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:212: in _visit
+    return [self._visit(n) for n in node]
+            ^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tvm.script.parser.core.evaluator.ExprEvaluator object at 0x2af60a249220>
+node = <tvm.script.parser.core.doc_core.Name object at 0x2af60a1ce570>
+
+    def _visit(self, node: doc.AST) -> Any:
+        """General doc AST node visiting method for expression evaluation.
+    
+        Parameters
+        ----------
+        node : doc.AST
+            The root node of AST tree node of expression to evaluate.
+    
+        Returns
+        -------
+        res : Any
+            The evaluation result.
+        """
+        args = []
+        if (
+            isinstance(node, doc.Call)
+            and hasattr(node.func, "attr")
+            and node.func.attr not in ["reads", "writes", "match_buffer"]
+        ) or isinstance(node, doc.BinOp | doc.UnaryOp | doc.Compare | doc.BoolOp | doc.IfExp):
+            if isinstance(node, doc.BinOp):
+                args = [node.left, node.right]
+            elif isinstance(node, doc.UnaryOp):
+                args = [node.operand]
+            elif isinstance(node, doc.Compare):
+                args = [node.left, *node.comparators]
+            elif isinstance(node, doc.IfExp):
+                args = [node.test, node.body, node.orelse]
+            elif isinstance(node, doc.Call):
+                args = node.args
+            elif isinstance(node, doc.BoolOp):
+                args = node.values
+        for arg in args:
+            if isinstance(arg, doc.Subscript) and isinstance(arg.slice, doc.Slice | doc.Tuple):
+                if isinstance(arg.slice, doc.Slice):
+                    check_slices = [arg.slice]
+                else:
+                    check_slices = []
+                    for p in arg.slice.elts:
+                        if isinstance(p, doc.Slice):
+                            check_slices.append(p)
+                for s in check_slices:
+                    if not s.step and s.upper and s.lower:
+                        s.step = doc.Constant(
+                            1,
+                            None,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 1,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 2,
+                        )
+        if isinstance(node, list):
+            return [self._visit(n) for n in node]
+        if isinstance(node, tuple):
+            return tuple(self._visit(n) for n in node)
+        assert isinstance(node, doc.AST)
+        if isinstance(node, doc.Name):
+            if node.id not in self.value_table and not _get_builtin_or_none(node.id):
+>               raise ParserError(node, f"Undefined variable: {node.id}")
+E               tvm.script.parser.core.error.ParserError: Undefined variable: n_st
+
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:218: ParserError
+
+During handling of the above exception, another exception occurred:
+
+size = 8192
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_persistent(size):
+        M, N, K = size, size, size
+>       kernel = hgemm_v6(M, N, K)
+                 ^^^^^^^^^^^^^^^^^
+
+tests/test_step06.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+gemm_kernels.py:768: in hgemm_v6
+    @Tx.prim_func(tirx=True)
+     ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/entry.py:70: in decorator_wrapper
+    f = parse(
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/entry.py:110: in parse
+    parser.parse(extra_vars=extra_vars)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:407: in parse
+    self.visit(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/doc.py:250: in generic_visit
+    self.visit(value)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:650: in visit
+    self.visit(item)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:715: in visit_FunctionDef
+    _dispatch_wrapper(func)(self, node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:639: in visit_function_def
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:799: in visit_With
+    return _dispatch(self, "With")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:584: in visit_with
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:769: in visit_For
+    return _dispatch(self, "For")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:295: in visit_for
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:814: in visit_Assign
+    return _dispatch(self, "Assign")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:633: in report_error
+    raise diag_err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:381: in visit_assign
+    rhs = self.eval_expr(node.value)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:527: in eval_expr
+    return eval_expr(self, node, var_values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:466: in eval_expr
+    return ExprEvaluator.eval(parser, value_table, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:121: in eval
+    result = self._visit(node)  # pylint: disable=protected-access
+             ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:212: in _visit
+    return [self._visit(n) for n in node]
+            ^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:248: in _visit
+    fields[field] = self._visit(attr)
+                    ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tvm.script.parser.core.evaluator.ExprEvaluator object at 0x2af60a249220>
+node = <tvm.script.parser.core.doc_core.Name object at 0x2af60a1ce570>
+
+    def _visit(self, node: doc.AST) -> Any:
+        """General doc AST node visiting method for expression evaluation.
+    
+        Parameters
+        ----------
+        node : doc.AST
+            The root node of AST tree node of expression to evaluate.
+    
+        Returns
+        -------
+        res : Any
+            The evaluation result.
+        """
+        args = []
+        if (
+            isinstance(node, doc.Call)
+            and hasattr(node.func, "attr")
+            and node.func.attr not in ["reads", "writes", "match_buffer"]
+        ) or isinstance(node, doc.BinOp | doc.UnaryOp | doc.Compare | doc.BoolOp | doc.IfExp):
+            if isinstance(node, doc.BinOp):
+                args = [node.left, node.right]
+            elif isinstance(node, doc.UnaryOp):
+                args = [node.operand]
+            elif isinstance(node, doc.Compare):
+                args = [node.left, *node.comparators]
+            elif isinstance(node, doc.IfExp):
+                args = [node.test, node.body, node.orelse]
+            elif isinstance(node, doc.Call):
+                args = node.args
+            elif isinstance(node, doc.BoolOp):
+                args = node.values
+        for arg in args:
+            if isinstance(arg, doc.Subscript) and isinstance(arg.slice, doc.Slice | doc.Tuple):
+                if isinstance(arg.slice, doc.Slice):
+                    check_slices = [arg.slice]
+                else:
+                    check_slices = []
+                    for p in arg.slice.elts:
+                        if isinstance(p, doc.Slice):
+                            check_slices.append(p)
+                for s in check_slices:
+                    if not s.step and s.upper and s.lower:
+                        s.step = doc.Constant(
+                            1,
+                            None,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 1,
+                            s.upper.lineno,
+                            s.upper.end_col_offset + 2,
+                        )
+        if isinstance(node, list):
+            return [self._visit(n) for n in node]
+        if isinstance(node, tuple):
+            return tuple(self._visit(n) for n in node)
+        assert isinstance(node, doc.AST)
+        if isinstance(node, doc.Name):
+            if node.id not in self.value_table and not _get_builtin_or_none(node.id):
+>               raise ParserError(node, f"Undefined variable: {node.id}")
+E               tvm.error.DiagnosticError: one or more error diagnostics were emitted, please check diagnostic render for output.
+
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/evaluator.py:218: DiagnosticError
+=========================== short test summary info ============================
+FAILED tests/test_step06.py::test_persistent[1024] - tvm.error.DiagnosticErro...
+FAILED tests/test_step06.py::test_persistent[2048] - tvm.error.DiagnosticErro...
+FAILED tests/test_step06.py::test_persistent[4096] - tvm.error.DiagnosticErro...
+FAILED tests/test_step06.py::test_persistent[8192] - tvm.error.DiagnosticErro...
+============================== 4 failed in 10.78s ==============================
+  Step 6 FAILED (exit code 1)
+
+Failed steps: [6]
+Stopping app - uncaught exception raised locally: SystemExit(1).
+Runner terminated.
+
+========================================
+Run completed at Mon Apr  6 08:59:39 EDT 2026
