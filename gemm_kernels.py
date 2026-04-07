@@ -979,19 +979,20 @@ def hgemm_v7(M, N, K):
             pool.move_base_to(1024)
             Asmem = pool.alloc((PIPE_DEPTH, BLK_M, BLK_K), a_type, layout=A_layout)
             Bsmem = pool.alloc((PIPE_DEPTH, BLK_N, BLK_K), b_type, layout=B_layout)
-            pool.move_base_to(1024)  # NOTE: Reset the base to 1024 so Dsmem reuses Asmem/Bsmem space.
+            # pool.move_base_to(1024)  # NOTE: Reset the base to 1024 so Dsmem reuses Asmem/Bsmem space.
             Dsmem = pool.alloc((BLK_M, EPI_N), d_type, layout=D_layout)
             pool.commit()
 
             # --- Barrier + TMEM init (warp 0 only) ---
-            if warp_id == 0:
-                if lane_id == 0:
-                    tma2mma.init(1)
-                    mma2tma.init(1)
-                    mma2ld.init(1)
-                    ld2mma.init(128)  # needs to wait for all 128 threads in WG0 to finish writeback
+            if wg_id == 0:
+                if warp_id == 0:
+                    if lane_id == 0:
+                        tma2mma.init(1)
+                        mma2tma.init(1)
+                        mma2ld.init(1)
+                        ld2mma.init(128)  # needs to wait for all 128 threads in WG0 to finish writeback
 
-                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
+                    Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
 
             Tx.ptx.fence.proxy_async("shared::cta")
             Tx.ptx.fence.mbarrier_init()
@@ -1100,16 +1101,16 @@ def hgemm_v7(M, N, K):
                         # --- TMA Store (elected thread of warp 0) ---
                         with Tx.thread(parent="warpgroup")[thread_id == 0]:
                             Tx.copy_async(D[m_st : m_st + BLK_M, n_epi_st : n_epi_st + EPI_N], Dsmem[:, :], dispatch="tma")
-
-                        # Commit and wait for TMA store completion
-                        Tx.ptx.cp_async.bulk.commit_group()
-                        Tx.ptx.cp_async.bulk.wait_group(0)
-
-                        # --- Writeback signals to MMA that all threads done writing from TMEM to reg, let MMA know that TMEM is free ---
-                        ld2mma.arrive(0, cta_id=0, pred=True)
+                            # Commit and wait for TMA store completion
+                            # NOTE: must stay in this loop to prevent SMEM overwrites in DMEM
+                            Tx.ptx.cp_async.bulk.commit_group()
+                            Tx.ptx.cp_async.bulk.wait_group(0)
 
                         # Sync before next iteration
                         Tx.cuda.warpgroup_sync(10)
+
+                    # --- Writeback signals to MMA that all threads done writing from TMEM to reg, let MMA know that TMEM is free ---
+                    ld2mma.arrive(0, cta_id=0, pred=True)
 
                     tile_scheduler.next_tile()
 
