@@ -1087,9 +1087,6 @@ def hgemm_v7(M, N, K):
                         with Tx.thread():  # per-thread cast
                             Tx.cast(Dreg_f16[no_st : no_st + TMEM_LD_N], Dreg[:])
 
-                    # --- Writeback signals to MMA that all threads done writing from TMEM to reg, let MMA know that TMEM is free ---
-                    ld2mma.arrive(0, cta_id=0, pred=True)
-
                     for no in Tx.unroll(MMA_N // EPI_N):
                         no_st = Tx.meta_var(no * EPI_N)
                         n_epi_st = Tx.meta_var(n_st + no_st)
@@ -1104,14 +1101,17 @@ def hgemm_v7(M, N, K):
                         with Tx.thread(parent="warpgroup")[thread_id == 0]:
                             Tx.copy_async(D[m_st : m_st + BLK_M, n_epi_st : n_epi_st + EPI_N], Dsmem[:, :], dispatch="tma")
 
-                            # Commit and wait for TMA store completion
-                            Tx.ptx.cp_async.bulk.commit_group()
-                            Tx.ptx.cp_async.bulk.wait_group(0)
+                        # Commit and wait for TMA store completion
+                        Tx.ptx.cp_async.bulk.commit_group()
+                        Tx.ptx.cp_async.bulk.wait_group(0)
+
+                        # --- Writeback signals to MMA that all threads done writing from TMEM to reg, let MMA know that TMEM is free ---
+                        ld2mma.arrive(0, cta_id=0, pred=True)
 
                         # Sync before next iteration
                         Tx.cuda.warpgroup_sync(10)
 
-                        tile_scheduler.next_tile()
+                    tile_scheduler.next_tile()
 
             Tx.cuda.cta_sync()
             if warp_id == 0:
