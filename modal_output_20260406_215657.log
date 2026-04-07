@@ -1,0 +1,115 @@
+========================================
+Modal run output - Started at Mon Apr  6 21:56:57 EDT 2026
+Steps: 7
+========================================
+Running: modal run run_modal.py --step 7
+
+✓ Initialized. View run at https://modal.com/apps/tylery/main/ap-j1AoorlgjKcHRHtX2jPo9S
+✓ Created objects.
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm/run_modal.py
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm
+├── 🔨 Created function run_tests.
+└── 🔨 Created function run_inspect.
+Running step 7: tests/test_step07.py
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 13.0.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace
+configfile: pyproject.toml
+[01:57:12] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[01:57:12] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[01:57:12] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[01:57:12] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[01:57:12] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[01:57:12] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+collecting ... collected 4 items
+
+!!!!!!! Segfault encountered !!!!!!!
+  File "<unknown>", line 0, in tvm::ffi::Optional<tvm::ffi::String, void> tvm::DictAttrs::GetAttr<tvm::ffi::String>(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, tvm::ffi::Optional<tvm::ffi::String, void>) const
+  File "<unknown>", line 0, in tvm::tir::FunctionClassifierVisitor::GetFunctionCallers(tvm::IRModule const&)
+  File "<unknown>", line 0, in tvm::tir::BindTarget(tvm::IRModule, tvm::Target const&)
+  File "<unknown>", line 0, in tvm::transform::ModulePassNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+  File "<unknown>", line 0, in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+  File "<unknown>", line 0, in tvm::transform::Pass::operator()(tvm::IRModule) const
+  File "Objects/call.c", line 240, in _PyObject_MakeTpCall
+  File "./Include/internal/pycore_call.h", line 90, in _PyObject_VectorcallTstate
+  File "Objects/call.c", line 325, in PyObject_Vectorcall
+  File "Python/bytecodes.c", line 2706, in _PyEval_EvalFrameDefault
+  File "Objects/call.c", line 133, in _PyObject_FastCallDictTstate
+  File "Objects/call.c", line 508, in _PyObject_Call_Prepend
+  File "Objects/typeobject.c", line 8769, in slot_tp_call
+  File "Objects/call.c", line 240, in _PyObject_MakeTpCall
+  File "./Include/internal/pycore_call.h", line 90, in _PyObject_VectorcallTstate
+  File "Objects/call.c", line 325, in PyObject_Vectorcall
+  File "Python/bytecodes.c", line 2706, in _PyEval_EvalFrameDefault
+  File "Objects/call.c", line 144, in _PyObject_FastCallDictTstate
+  File "Objects/call.c", line 508, in _PyObject_Call_Prepend
+  File "Objects/typeobject.c", line 8769, in slot_tp_call
+  File "Objects/call.c", line 240, in _PyObject_MakeTpCall
+  File "./Include/internal/pycore_call.h", line 90, in _PyObject_VectorcallTstate
+  File "Objects/call.c", line 325, in PyObject_Vectorcall
+  File "Python/bytecodes.c", line 2706, in _PyEval_EvalFrameDefault
+  File "Objects/call.c", line 144, in _PyObject_FastCallDictTstate
+  File "Objects/call.c", line 508, in _PyObject_Call_Prepend
+  File "Objects/typeobject.c", line 8769, in slot_tp_call
+  File "Objects/call.c", line 367, in _PyObject_Call
+  File "Objects/call.c", line 379, in PyObject_Call
+  File "Python/bytecodes.c", line 3254, in _PyEval_EvalFrameDefault
+  File "Objects/call.c", line 144, in _PyObject_FastCallDictTstate
+  File "Objects/call.c", line 508, in _PyObject_Call_Prepend
+  File "Objects/typeobject.c", line 8769, in slot_tp_call
+  File "Objects/call.c", line 240, in _PyObject_MakeTpCall
+  File "./Include/internal/pycore_call.h", line 90, in _PyObject_VectorcallTstate
+  File "Objects/call.c", line 325, in PyObject_Vectorcall
+  File "Python/bytecodes.c", line 2706, in _PyEval_EvalFrameDefault
+  File "Objects/call.c", line 144, in _PyObject_FastCallDictTstate
+  File "Objects/call.c", line 508, in _PyObject_Call_Prepend
+  File "Objects/typeobject.c", line 8769, in slot_tp_call
+  File "Objects/call.c", line 240, in _PyObject_MakeTpCall
+  File "./Include/internal/pycore_call.h", line 90, in _PyObject_VectorcallTstate
+  File "Objects/call.c", line 325, in PyObject_Vectorcall
+  File "Python/bytecodes.c", line 2706, in _PyEval_EvalFrameDefault
+  File "Objects/call.c", line 144, in _PyObject_FastCallDictTstate
+  File "Objects/call.c", line 508, in _PyObject_Call_Prepend
+  File "Objects/typeobject.c", line 8769, in slot_tp_call
+  File "Objects/call.c", line 240, in _PyObject_MakeTpCall
+  File "./Include/internal/pycore_call.h", line 90, in _PyObject_VectorcallTstate
+  File "Objects/call.c", line 325, in PyObject_Vectorcall
+  File "Python/bytecodes.c", line 2706, in _PyEval_EvalFrameDefault
+  File "Python/ceval.c", line 578, in PyEval_EvalCode
+  File "Python/bltinmodule.c", line 1096, in builtin_exec_impl
+  File "Python/clinic/bltinmodule.c.h", line 586, in builtin_exec
+  File "Objects/methodobject.c", line 438, in cfunction_vectorcall_FASTCALL_KEYWORDS
+  File "./Include/internal/pycore_call.h", line 92, in _PyObject_VectorcallTstate
+  File "Objects/call.c", line 325, in PyObject_Vectorcall
+  File "Python/bytecodes.c", line 2706, in _PyEval_EvalFrameDefault
+  File "Modules/main.c", line 300, in pymain_run_module
+  File "Modules/main.c", line 623, in pymain_run_python
+  File "Modules/main.c", line 709, in Py_RunMain
+  File "Modules/main.c", line 763, in Py_BytesMain
+  File "<unknown>", line 0, in _start
+  File "<unknown>", line 0, in 0xffffffffffffffff
+
+  Step 7 FAILED (exit code -11)
+
+Failed steps: [7]
+Stopping app - uncaught exception raised locally: SystemExit(1).
+Runner terminated.
+tests/test_step07.py::test_warp_spec[1024] 
+========================================
+Run completed at Mon Apr  6 21:57:22 EDT 2026
