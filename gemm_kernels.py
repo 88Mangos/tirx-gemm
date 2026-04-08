@@ -1616,6 +1616,27 @@ def hgemm_v10(M, N, K):
             """ 
             Given a cluster containing CTA_GROUP=2 CTAs (SMs), which have distributed SMEM,
             now the CTAs can also cooperate within the cluster to increase arithmetic intensity.
+
+            In both CTA_0 and CTA_1, we consider WG_NUMBER=3 warpgroups.
+            - WG0 and WG1 are used for writeback
+            - WG2 is used for TMA loading and MMA 
+            
+            In each warpgroup, there are 4 warps. 
+
+            Let's look at warpgroup 2 first.
+            - warp 0 and warp 1 are MMA consumers. 
+              Warp 0 writes to the first 256 cols of TMEM
+              Warp 1 writes to the latter 256 cols of TMEM
+              Since TMEM always has 128 lanes, this gives us 128 x 512 TMEM cols to writeback.
+            - warp 3 is a TMA producer, which loads 2 A blocks and 1 B block per stage.
+              Each block is size 128 x 64.
+              Basically, to fill in a 128 x 512 result tile,
+              We can do A_tile_0[128 x 64] @ B_tile[64 x 256] in warp 0 -> [128 x 256]
+              We can do A_tile_1[128 x 64] @ B_tile[64 x 256] in warp 1 -> [128 x 256]
+
+            Now let's think about the writeback WGs.
+            - WG0 handles the [128 x 256] chunk of TMEM that WG2, warp 0 MMA'd
+            - WG1 handles the [128 x 256] chunk of TMEM that WG2, warp 1 MMA'd
             """
             # NOTE: since the cluster is CTA_GROUP=2 by 1, cby=0 always, so ignore cby
             cbx, _cby = Tx.cta_id([CTA_GROUP, 1], parent="cluster")  # cluster CTA ID - position within the cluster
@@ -1662,6 +1683,8 @@ def hgemm_v10(M, N, K):
             tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
 
             # --- TMA Producer (WG1/warp3) ---
+
+
             if wg_id == 1:
                 if warp_id == 3:
                     # tma2mma_cta0 = tma2mma.remote_view(0) for crss-CTA signaling
@@ -1747,6 +1770,8 @@ def hgemm_v10(M, N, K):
                                 tile_scheduler.next_tile()
 
             # --- Writeback (WG0) ---
+            @Tx.inline
+            
             elif wg_id == 0:
                 wb_phase = PipelineState("wb", 1)
                 wb_phase.init(is_producer=False)
