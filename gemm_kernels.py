@@ -1502,7 +1502,7 @@ def hgemm_v9(M, N, K):
                     for no in Tx.unroll(MMA_N // TMEM_LD_N):
                         no_st = Tx.meta_var(no * TMEM_LD_N)
                         Dreg = Tx.alloc_local((TMEM_LD_N,), acc_type)  # tmp register
-                        Dreg_wg = Dreg.view(MMA_N, TMEM_LD_N, layout=TileLayout(S[(MMA_N, TMEM_LD_N) : (1 @ TLane, 1 @ TCol)]))
+                        Dreg_wg = Dreg.view(TMEM_LANES, TMEM_LD_N, layout=TileLayout(S[(TMEM_LANES, TMEM_LD_N) : (1 @ TLane, 1 @ TCol)]))
 
                         with Tx.warpgroup():  # all threads in WG write TMEM → Reg
                             Tx.copy(Dreg_wg[:, :], tmem[:, no_st : no_st + TMEM_LD_N])
