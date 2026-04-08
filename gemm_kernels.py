@@ -1340,6 +1340,13 @@ def hgemm_v9(M, N, K):
 
     CTA_MASK = 3  # NOTE: use cta_mask=3 for TCGen05Bar.arrive (signal both CTAs)
 
+    #   - tma2mma_cta0 = tma2mma.remote_view(0) for cross-CTA signaling
+    #   - MMA output is MMA_N=256 columns (B_N * CTA_GROUP)
+    #   - MMA only on cbx==0 (CTA 0 issues MMA for both CTAs)
+    #   - ld2mma.init(128 * CTA_GROUP) for cross-CTA writeback sync
+    #   - Use cluster_sync instead of cta_sync at boundaries
+
+    # Extend step 7 with CTA_GROUP=2 cluster.
     @Tx.prim_func(tirx=True)
     def kernel(
         A: Tx.Buffer((M, K), a_type),
@@ -1347,15 +1354,165 @@ def hgemm_v9(M, N, K):
         D: Tx.Buffer((M, N), d_type),
     ):
         with Tx.kernel():
-            # TODO: Extend step 7 with CTA_GROUP=2 cluster.
-            # Key changes:
-            #   - cbx, cby = Tx.cta_id([CTA_GROUP, 1], parent="cluster")
-            #   - tma2mma_cta0 = tma2mma.remote_view(0) for cross-CTA signaling
-            #   - MMA output is MMA_N=256 columns (B_N * CTA_GROUP)
-            #   - MMA only on cbx==0 (CTA 0 issues MMA for both CTAs)
-            #   - ld2mma.init(128 * CTA_GROUP) for cross-CTA writeback sync
-            #   - Use cluster_sync instead of cta_sync at boundaries
-            pass
+            cbx, cby = Tx.cta_id([CTA_GROUP, 1], parent="cluster")
+            tile_scheduler = ClusterPersistentScheduler2D("ts", num_m_tiles=M // 128, num_n_tiles=N // 128, l2_group_size=8, num_clusters=SM_COUNT)
+            tile_scheduler.init(bx)
+
+            wg_id = Tx.warpgroup_id([WG_NUMBER], parent="cta")
+            warp_id = Tx.warp_id([WARPS_PER_WG], parent="warpgroup")
+            lane_id = Tx.thread_id([THREADS_PER_WARP], parent="warp")
+            thread_id = Tx.meta_var(warp_id * THREADS_PER_WARP + lane_id)
+
+            # --- Shared memory allocation ---
+            pool = Tx.PoolAllocator()
+            tmem_addr = pool.alloc((1,), "uint32")
+            tma2mma = TMABar(pool, PIPE_DEPTH, "tma2mma")  # TMA tells MMA when it's done loading
+            mma2tma = TCGen05Bar(pool, PIPE_DEPTH, "mma2tma")  # MMA tells MMA when it needs more data
+            mma2ld = TCGen05Bar(pool, 1, "mma2tma")  # MMA tells writeback it's done
+            ld2mma = MBarrier(pool, 1, "ld2mma")  # writeback tells MMA the SMEM is free to be used again
+
+            pool.move_base_to(1024)
+            Asmem = pool.alloc((PIPE_DEPTH, BLK_M, BLK_K), a_type, layout=A_layout)
+            Bsmem = pool.alloc((PIPE_DEPTH, BLK_N, BLK_K), b_type, layout=B_layout)
+            # pool.move_base_to(1024)  # NOTE: Reset the base to 1024 so Dsmem reuses Asmem/Bsmem space.
+            Dsmem = pool.alloc((BLK_M, EPI_N), d_type, layout=D_layout)
+            pool.commit()
+
+            # --- Barrier + TMEM init (warp 0 only) ---
+            if wg_id == 0:
+                if warp_id == 0:
+                    if lane_id == 0:
+                        tma2mma.init(1)
+                        mma2tma.init(1)
+                        mma2ld.init(1)
+                        ld2mma.init(128)  # needs to wait for all 128 threads in WG0 to finish writeback
+
+                    Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
+
+            Tx.ptx.fence.proxy_async("shared::cta")
+            Tx.ptx.fence.mbarrier_init()
+            Tx.cuda.cta_sync()
+
+            tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
+
+            # --- TMA Producer (WG1/warp3) ---
+            if wg_id == 1:
+                if warp_id == 3:
+                    tma_phase = PipelineState("tma", PIPE_DEPTH)
+                    tma_phase.init(is_producer=True)
+
+                    byte_count = (BLK_M * BLK_K + BLK_N * BLK_K) * 2
+
+                    with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+                        while tile_scheduler.valid():
+                            m_st, n_st = Tx.meta_var(tile_scheduler.m_idx * BLK_M), Tx.meta_var(tile_scheduler.n_idx * BLK_N)
+                            for k in Tx.serial(K_TILES):
+                                k_st = k * BLK_K
+
+                                # --- wait for MMA to signal TMA that it's not using SMEM ---
+                                mma2tma.wait(tma_phase.stage, tma_phase.phase)
+
+                                Tx.copy_async(Asmem[tma_phase.stage, :, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", cta_group=1, mbar=tma2mma.ptr_to([tma_phase.stage]))
+                                Tx.copy_async(Bsmem[tma_phase.stage, :, :], B[n_st : n_st + BLK_N, k_st : k_st + BLK_K], dispatch="tma", cta_group=1, mbar=tma2mma.ptr_to([tma_phase.stage]))
+
+                                # --- TMA signals MMA that data has been loaded from GMEM into SMEM ---
+                                tma2mma.arrive(tma_phase.stage, byte_count)
+                                tma_phase.move_to_next_stage()  # advance from loading stage to blocking stage
+
+                            tile_scheduler.next_tile()
+
+                # --- MMA Consumer (WG1/warp0) ---
+                elif warp_id == 0:
+                    mma_phase = PipelineState("mma", PIPE_DEPTH)
+                    mma_phase.init(is_producer=False)
+                    ld_phase = PipelineState("ld", 1)
+                    ld_phase.init(is_producer=True)
+
+                    with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+                        while tile_scheduler.valid():
+                            # --- wait for Writeback to signal to MMA that TMEM has been successfully written to GMEM ---
+                            ld2mma.wait(0, ld_phase.phase)
+
+                            # now we can use TMEM for GEMM!
+                            ld_phase.move_to_next_stage()  # move from writeback stage to blocking stage
+                            accum = 0  # False initially, overwrites TMEM.
+
+                            for k in Tx.serial(K_TILES):
+                                # --- wait for TMA to signal to MMA that data has been loaded into SMEM
+                                tma2mma.wait(mma_phase.stage, mma_phase.phase)
+
+                                Tx.gemm_async(tmem[:, :BLK_N], Asmem[mma_phase.stage, :, :], Bsmem[mma_phase.stage, :, :], accum=accum, dispatch="tcgen05", cta_group=1)  # noqa F821 # type: ignore
+                                accum = 1  # For all subsequent iterations, becomes True, and accumulates onto TMEM
+
+                                # --- MMA signals to TMA that SMEM has been consumed, and is now free for another load
+                                mma2tma.arrive(mma_phase.stage, cta_group=1, cta_mask=CTA_MASK)
+                                mma_phase.move_to_next_stage()  # move from GEMM stage to blocking stage
+
+                            # --- MMA signals to Writeback that TMEM has been filled and should now be sent back to GMEM ---
+                            mma2ld.arrive(0, cta_group=1, cta_mask=CTA_MASK)
+
+                            tile_scheduler.next_tile()
+
+            # --- Writeback (WG0) ---
+            elif wg_id == 0:
+                wb_phase = PipelineState("wb", 1)
+                wb_phase.init(is_producer=False)
+
+                while tile_scheduler.valid():
+                    m_st, n_st = Tx.meta_var(tile_scheduler.m_idx * BLK_M), Tx.meta_var(tile_scheduler.n_idx * BLK_N)
+
+                    # --- wait for MMA to signal to Writeback that TMEM has been filled and should now be sent back to GMEM ---
+                    mma2ld.wait(0, wb_phase.phase)
+
+                    # now we can write out our TMEM!
+                    wb_phase.move_to_next_stage()
+                    Tx.ptx.tcgen05.fence.after_thread_sync()  # make TMEM visible to TMA
+
+                    # ── Writeback: TMEM → Reg → SMEM → GMEM ──
+                    # use a temporary register and write back in n=TMEM_LD_N chunks
+                    Dreg_f16 = Tx.alloc_local((MMA_N,), d_type)
+
+                    for no in Tx.unroll(MMA_N // TMEM_LD_N):
+                        no_st = Tx.meta_var(no * TMEM_LD_N)
+                        Dreg = Tx.alloc_local((TMEM_LD_N,), acc_type)  # tmp register
+
+                        with Tx.warpgroup():  # all threads in WG write TMEM → Reg
+                            Dreg_wg = Dreg.view(MMA_N, TMEM_LD_N, layout=TileLayout(S[(MMA_N, TMEM_LD_N) : (1 @ TLane, 1 @ TCol)]))
+                            Tx.copy(Dreg_wg[:, :], tmem[:, no_st : no_st + TMEM_LD_N])
+
+                        with Tx.thread():  # per-thread cast
+                            Tx.cast(Dreg_f16[no_st : no_st + TMEM_LD_N], Dreg[:])
+
+                    for no in Tx.unroll(MMA_N // EPI_N):
+                        no_st = Tx.meta_var(no * EPI_N)
+                        n_epi_st = Tx.meta_var(n_st + no_st)
+
+                        with Tx.thread():  # per-thread write EPI_N-col slice to SMEM
+                            Tx.copy(Dsmem[thread_id, :], Dreg_f16[no_st : no_st + EPI_N])
+                            Tx.ptx.fence.proxy_async("shared::cta")  # make SMEM writes visible to TMA engine
+
+                        Tx.cuda.warpgroup_sync(10)  # wait until all threads done writing SMEM
+
+                        # --- TMA Store (elected thread of warp 0) ---
+                        with Tx.thread(parent="warpgroup")[thread_id == 0]:
+                            Tx.copy_async(D[m_st : m_st + BLK_M, n_epi_st : n_epi_st + EPI_N], Dsmem[:, :], dispatch="tma")
+                            # Commit and wait for TMA store completion
+                            # NOTE: must stay in this loop to prevent SMEM overwrites in DMEM
+                            Tx.ptx.cp_async.bulk.commit_group()
+                            Tx.ptx.cp_async.bulk.wait_group(0)
+
+                        # Sync before next iteration
+                        Tx.cuda.warpgroup_sync(10)
+
+                    # --- Writeback signals to MMA that all threads done writing from TMEM to reg, let MMA know that TMEM is free ---
+                    ld2mma.arrive(0, cta_id=0, pred=True)
+
+                    tile_scheduler.next_tile()
+
+            Tx.cuda.cta_sync()
+            if warp_id == 0:
+                Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
+                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=1)
 
     return kernel
 
