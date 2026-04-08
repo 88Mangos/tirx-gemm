@@ -1368,7 +1368,7 @@ def hgemm_v9(M, N, K):
             lane_id = Tx.thread_id([THREADS_PER_WARP], parent="warp")
             thread_id = Tx.meta_var(warp_id * THREADS_PER_WARP + lane_id)
 
-            tile_scheduler = ClusterPersistentScheduler2D("ts", num_m_tiles=M // MMA_N, num_n_tiles=N // MMA_N, l2_group_size=8, num_clusters=SM_COUNT // CTA_GROUP)
+            tile_scheduler = ClusterPersistentScheduler2D("ts", num_m_tiles=M // MMA_M, num_n_tiles=N // MMA_N, l2_group_size=8, num_clusters=SM_COUNT // CTA_GROUP)
             tile_scheduler.init(bx // CTA_GROUP)
 
             # --- Shared memory allocation ---
