@@ -1440,9 +1440,7 @@ def hgemm_v9(M, N, K):
                         while tile_scheduler.valid():
                             # M is split: scale the cluster index by CTA_GROUP, then add the local CTA offset (cbx)
                             m_st = Tx.meta_var((tile_scheduler.m_idx * CTA_GROUP + cbx) * BLK_M)
-
-                            # N is shared: both CTAs load the exact same N columns for their respective matrix multiplications
-                            n_st = Tx.meta_var(tile_scheduler.n_idx * BLK_N)
+                            n_st = Tx.meta_var((tile_scheduler.n_idx * CTA_GROUP + cbx) * BLK_N)
                             tma_load(m_st, n_st)
                             tile_scheduler.next_tile()
 
@@ -1546,7 +1544,7 @@ def hgemm_v9(M, N, K):
                     m_st = Tx.meta_var((tile_scheduler.m_idx * CTA_GROUP + cbx) * BLK_M)
 
                     # N is shared: both CTAs load the exact same N columns for their respective matrix multiplications
-                    n_st = Tx.meta_var(tile_scheduler.n_idx * BLK_N)
+                    n_st = Tx.meta_var(tile_scheduler.n_idx * MMA_N)
 
                     # ── Writeback: TMEM → Reg → SMEM → GMEM ──
                     """ 
