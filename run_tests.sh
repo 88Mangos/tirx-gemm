@@ -81,7 +81,7 @@ activate_venv
 
 # Create output file with timestamp if not provided
 if [ -z "$OUTPUT_FILE" ]; then
-    OUTPUT_FILE="modal_output_$(date +%Y%m%d_%H%M%S).log"
+    OUTPUT_FILE="./logs/modal_output_$(date +%Y%m%d_%H%M%S).log"
 fi
 
 echo "Output will be saved to: $OUTPUT_FILE"
@@ -107,6 +107,6 @@ echo "Running all steps simultaneously..."
 
 echo ""
 echo "Output saved to: $OUTPUT_FILE"
-echo ""
-echo "=== Terminal Output ==="
-cat "$OUTPUT_FILE"
+# echo ""
+# echo "=== Terminal Output ==="
+# cat "$OUTPUT_FILE"
