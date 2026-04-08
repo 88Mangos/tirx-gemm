@@ -45,6 +45,8 @@ TODO: refactor all the mbarriers to use the semantically correct ones instead of
 Will probably have to tinker with the pyi?
 
 TODO: refactor inlined functions to make semantic sense: wait -> command -> arrival queued
+
+TODO: make gemm_async use MMA_N, not BLK_N
 """
 
 import tvm
@@ -1356,7 +1358,7 @@ def hgemm_v9(M, N, K):
         with Tx.kernel():
             cbx, cby = Tx.cta_id([CTA_GROUP, 1], parent="cluster")
             tile_scheduler = ClusterPersistentScheduler2D("ts", num_m_tiles=M // 128, num_n_tiles=N // 128, l2_group_size=8, num_clusters=SM_COUNT)
-            tile_scheduler.init(bx)
+            tile_scheduler.init(cbx)
 
             wg_id = Tx.warpgroup_id([WG_NUMBER], parent="cta")
             warp_id = Tx.warp_id([WARPS_PER_WG], parent="warpgroup")
@@ -1385,7 +1387,7 @@ def hgemm_v9(M, N, K):
                         tma2mma.init(1)
                         mma2tma.init(1)
                         mma2ld.init(1)
-                        ld2mma.init(128)  # needs to wait for all 128 threads in WG0 to finish writeback
+                        ld2mma.init(128 * CTA_GROUP)  # CHANGED: was 128
 
                     Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
 
@@ -1398,6 +1400,8 @@ def hgemm_v9(M, N, K):
             # --- TMA Producer (WG1/warp3) ---
             if wg_id == 1:
                 if warp_id == 3:
+                    tma2mma_cta0 = tma2mma.remote_view(0)  # NEW: cross-CTA barrier view
+
                     tma_phase = PipelineState("tma", PIPE_DEPTH)
                     tma_phase.init(is_producer=True)
 
@@ -1412,46 +1416,48 @@ def hgemm_v9(M, N, K):
                                 # --- wait for MMA to signal TMA that it's not using SMEM ---
                                 mma2tma.wait(tma_phase.stage, tma_phase.phase)
 
-                                Tx.copy_async(Asmem[tma_phase.stage, :, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", cta_group=1, mbar=tma2mma.ptr_to([tma_phase.stage]))
-                                Tx.copy_async(Bsmem[tma_phase.stage, :, :], B[n_st : n_st + BLK_N, k_st : k_st + BLK_K], dispatch="tma", cta_group=1, mbar=tma2mma.ptr_to([tma_phase.stage]))
+                                Tx.copy_async(Asmem[tma_phase.stage, :, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", cta_group=1, mbar=tma2mma_cta0.ptr_to([tma_phase.stage]))
+                                Tx.copy_async(Bsmem[tma_phase.stage, :, :], B[n_st : n_st + BLK_N, k_st : k_st + BLK_K], dispatch="tma", cta_group=1, mbar=tma2mma_cta0.ptr_to([tma_phase.stage]))
 
                                 # --- TMA signals MMA that data has been loaded from GMEM into SMEM ---
-                                tma2mma.arrive(tma_phase.stage, byte_count)
-                                tma_phase.move_to_next_stage()  # advance from loading stage to blocking stage
+                                if cbx == 0:
+                                    tma2mma.arrive(tma_phase.stage, byte_count)
+                                    tma_phase.move_to_next_stage()  # advance from loading stage to blocking stage
 
                             tile_scheduler.next_tile()
 
                 # --- MMA Consumer (WG1/warp0) ---
                 elif warp_id == 0:
-                    mma_phase = PipelineState("mma", PIPE_DEPTH)
-                    mma_phase.init(is_producer=False)
-                    ld_phase = PipelineState("ld", 1)
-                    ld_phase.init(is_producer=True)
+                    if cbx == 0:
+                        mma_phase = PipelineState("mma", PIPE_DEPTH)
+                        mma_phase.init(is_producer=False)
+                        ld_phase = PipelineState("ld", 1)
+                        ld_phase.init(is_producer=True)
 
-                    with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
-                        while tile_scheduler.valid():
-                            # --- wait for Writeback to signal to MMA that TMEM has been successfully written to GMEM ---
-                            ld2mma.wait(0, ld_phase.phase)
+                        with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
+                            while tile_scheduler.valid():
+                                # --- wait for Writeback to signal to MMA that TMEM has been successfully written to GMEM ---
+                                ld2mma.wait(0, ld_phase.phase)
 
-                            # now we can use TMEM for GEMM!
-                            ld_phase.move_to_next_stage()  # move from writeback stage to blocking stage
-                            accum = 0  # False initially, overwrites TMEM.
+                                # now we can use TMEM for GEMM!
+                                ld_phase.move_to_next_stage()  # move from writeback stage to blocking stage
+                                accum = 0  # False initially, overwrites TMEM.
 
-                            for k in Tx.serial(K_TILES):
-                                # --- wait for TMA to signal to MMA that data has been loaded into SMEM
-                                tma2mma.wait(mma_phase.stage, mma_phase.phase)
+                                for k in Tx.serial(K_TILES):
+                                    # --- wait for TMA to signal to MMA that data has been loaded into SMEM
+                                    tma2mma.wait(mma_phase.stage, mma_phase.phase)
 
-                                Tx.gemm_async(tmem[:, :BLK_N], Asmem[mma_phase.stage, :, :], Bsmem[mma_phase.stage, :, :], accum=accum, dispatch="tcgen05", cta_group=1)  # noqa F821 # type: ignore
-                                accum = 1  # For all subsequent iterations, becomes True, and accumulates onto TMEM
+                                    Tx.gemm_async(tmem[:, :MMA_N], Asmem[mma_phase.stage, :, :], Bsmem[mma_phase.stage, :, :], accum=accum, dispatch="tcgen05", cta_group=CTA_GROUP)  # noqa F821 # type: ignore
+                                    accum = 1  # For all subsequent iterations, becomes True, and accumulates onto TMEM
 
-                                # --- MMA signals to TMA that SMEM has been consumed, and is now free for another load
-                                mma2tma.arrive(mma_phase.stage, cta_group=1, cta_mask=CTA_MASK)
-                                mma_phase.move_to_next_stage()  # move from GEMM stage to blocking stage
+                                    # --- MMA signals to TMA that SMEM has been consumed, and is now free for another load
+                                    mma2tma.arrive(mma_phase.stage, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
+                                    mma_phase.move_to_next_stage()  # move from GEMM stage to blocking stage
 
-                            # --- MMA signals to Writeback that TMEM has been filled and should now be sent back to GMEM ---
-                            mma2ld.arrive(0, cta_group=1, cta_mask=CTA_MASK)
+                                # --- MMA signals to Writeback that TMEM has been filled and should now be sent back to GMEM ---
+                                mma2ld.arrive(0, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
 
-                            tile_scheduler.next_tile()
+                                tile_scheduler.next_tile()
 
             # --- Writeback (WG0) ---
             elif wg_id == 0:
