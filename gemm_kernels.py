@@ -1438,7 +1438,11 @@ def hgemm_v9(M, N, K):
 
                     with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
                         while tile_scheduler.valid():
-                            m_st, n_st = Tx.meta_var((tile_scheduler.m_idx + cbx) * BLK_M), Tx.meta_var((tile_scheduler.m_idx + cbx) * BLK_N)
+                            # M is split: scale the cluster index by CTA_GROUP, then add the local CTA offset (cbx)
+                            m_st = Tx.meta_var((tile_scheduler.m_idx * CTA_GROUP + cbx) * BLK_M)
+
+                            # N is shared: both CTAs load the exact same N columns for their respective matrix multiplications
+                            n_st = Tx.meta_var(tile_scheduler.n_idx * BLK_N)
                             tma_load(m_st, n_st)
                             tile_scheduler.next_tile()
 
@@ -1538,7 +1542,11 @@ def hgemm_v9(M, N, K):
                         Tx.cuda.warpgroup_sync(10)
 
                 while tile_scheduler.valid():
-                    m_st, n_st = Tx.meta_var(tile_scheduler.m_idx * BLK_M), Tx.meta_var(tile_scheduler.n_idx * BLK_N)
+                    # M is split: scale the cluster index by CTA_GROUP, then add the local CTA offset (cbx)
+                    m_st = Tx.meta_var((tile_scheduler.m_idx * CTA_GROUP + cbx) * BLK_M)
+
+                    # N is shared: both CTAs load the exact same N columns for their respective matrix multiplications
+                    n_st = Tx.meta_var(tile_scheduler.n_idx * BLK_N)
 
                     # ── Writeback: TMEM → Reg → SMEM → GMEM ──
                     """ 

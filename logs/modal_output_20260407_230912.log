@@ -1,0 +1,218 @@
+========================================
+Modal run output - Started at Tue Apr  7 23:09:12 EDT 2026
+Steps: 9
+========================================
+Running: modal run run_modal.py --step 9
+
+✓ Initialized. View run at https://modal.com/apps/tylery/main/ap-hKKwqL4GoC3jVypvWOHVVh
+✓ Created objects.
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm/run_modal.py
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm
+├── 🔨 Created function run_tests.
+└── 🔨 Created function run_inspect.
+Running step 9: tests/test_step09.py
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 13.0.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace
+configfile: pyproject.toml
+[03:09:31] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:09:31] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:09:31] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:09:31] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:09:31] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[03:09:31] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+collecting ... collected 4 items
+
+tests/test_step09.py::test_cluster[1024] FAILED
+tests/test_step09.py::test_cluster[2048] FAILED
+tests/test_step09.py::test_cluster[4096] FAILED
+tests/test_step09.py::test_cluster[8192] FAILED
+
+=================================== FAILURES ===================================
+______________________________ test_cluster[1024] ______________________________
+
+size = 1024
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_cluster(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v9(M, N, K)
+        A, B, C = prepare_data(M, N, K)
+        C_tir = compile_and_run(kernel, A, B, C)
+>       verify(C_tir, A, B)
+
+tests/test_step09.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+C_tir = tensor([[ 35.5938,  34.6250,  28.6562,  ...,   0.0000,   0.0000,   0.0000],
+        [ -2.3633,  26.6719, -31.7188,  .....      [-25.6250, -10.9766,   3.8125,  ...,   0.0000,   0.0000,   0.0000]],
+       device='cuda:0', dtype=torch.float16)
+A = tensor([[ 0.5259,  0.6396,  1.2363,  ...,  0.5786,  2.6387, -0.8013],
+        [ 0.6260,  0.6406, -0.0679,  ...,  3.128...0],
+        [-1.0557,  0.1343,  0.0463,  ...,  0.9897,  1.2295,  0.4658]],
+       device='cuda:0', dtype=torch.float16)
+B = tensor([[-0.5059,  0.0644, -0.3596,  ..., -0.1516,  1.4883,  0.7168],
+        [ 0.9224,  1.2393,  0.6514,  ..., -0.705...2],
+        [ 0.2285,  1.4219,  1.6064,  ...,  0.5693,  0.1747, -1.1133]],
+       device='cuda:0', dtype=torch.float16)
+rtol = 0.001, atol = 0.01
+
+    def verify(C_tir, A, B, rtol=1e-3, atol=1e-2):
+        """Verify TIRX result against torch.matmul (cuBLAS)."""
+        C_ref = torch.matmul(A, B.T)
+>       torch.testing.assert_close(C_tir, C_ref, rtol=rtol, atol=atol)
+E       AssertionError: Tensor-likes are not close!
+E       
+E       Mismatched elements: 917147 / 1048576 (87.5%)
+E       Greatest absolute difference: 214.875 at index (169, 247) (up to 0.01 allowed)
+E       Greatest relative difference: inf at index (221, 365) (up to 0.001 allowed)
+
+utils.py:34: AssertionError
+______________________________ test_cluster[2048] ______________________________
+
+size = 2048
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_cluster(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v9(M, N, K)
+        A, B, C = prepare_data(M, N, K)
+        C_tir = compile_and_run(kernel, A, B, C)
+>       verify(C_tir, A, B)
+
+tests/test_step09.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+C_tir = tensor([[ 35.8125, -67.4375,  19.4531,  ...,   0.0000,   0.0000,   0.0000],
+        [ 47.3125, -30.7031, -21.7031,  .....      [  5.9219, -47.3125, -12.0781,  ...,   0.0000,   0.0000,   0.0000]],
+       device='cuda:0', dtype=torch.float16)
+A = tensor([[-0.4258,  0.6328,  1.0713,  ..., -0.3730,  0.3281,  0.6650],
+        [-0.3447,  1.1006, -1.9199,  ..., -1.813...2],
+        [-1.0527, -0.1542,  0.0539,  ..., -0.9897, -0.6167, -1.0654]],
+       device='cuda:0', dtype=torch.float16)
+B = tensor([[-7.8809e-01, -4.3671e-02,  1.3000e-01,  ...,  7.5989e-03,
+         -3.0420e-01,  9.6582e-01],
+        [-1.018...-1.4365e+00, -8.4717e-01,  ...,  9.8228e-04,
+         -5.7666e-01, -1.4141e+00]], device='cuda:0', dtype=torch.float16)
+rtol = 0.001, atol = 0.01
+
+    def verify(C_tir, A, B, rtol=1e-3, atol=1e-2):
+        """Verify TIRX result against torch.matmul (cuBLAS)."""
+        C_ref = torch.matmul(A, B.T)
+>       torch.testing.assert_close(C_tir, C_ref, rtol=rtol, atol=atol)
+E       AssertionError: Tensor-likes are not close!
+E       
+E       Mismatched elements: 3930900 / 4194304 (93.7%)
+E       Greatest absolute difference: 333.5 at index (1027, 365) (up to 0.01 allowed)
+E       Greatest relative difference: inf at index (172, 847) (up to 0.001 allowed)
+
+utils.py:34: AssertionError
+______________________________ test_cluster[4096] ______________________________
+
+size = 4096
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_cluster(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v9(M, N, K)
+        A, B, C = prepare_data(M, N, K)
+        C_tir = compile_and_run(kernel, A, B, C)
+>       verify(C_tir, A, B)
+
+tests/test_step09.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+C_tir = tensor([[107.5625,  26.8750, -11.9453,  ...,   0.0000,   0.0000,   0.0000],
+        [-75.1875,  27.5156, -84.8125,  .....      [ 56.2812,  79.2500, -54.3750,  ...,   0.0000,   0.0000,   0.0000]],
+       device='cuda:0', dtype=torch.float16)
+A = tensor([[-0.0609, -1.2949, -0.9253,  ...,  0.4487, -0.3696,  0.5454],
+        [-0.3311, -0.5884,  1.0479,  ..., -0.322...5],
+        [ 0.8970,  0.8198, -0.1044,  ...,  1.2080, -0.9951,  1.3799]],
+       device='cuda:0', dtype=torch.float16)
+B = tensor([[ 0.9609,  0.0580, -0.1317,  ...,  1.0908, -1.0625, -0.9849],
+        [ 0.1693, -0.6562, -0.2031,  ..., -0.648...9],
+        [ 0.1527, -0.9775, -0.4922,  ..., -0.1688,  0.3582, -0.3289]],
+       device='cuda:0', dtype=torch.float16)
+rtol = 0.001, atol = 0.01
+
+    def verify(C_tir, A, B, rtol=1e-3, atol=1e-2):
+        """Verify TIRX result against torch.matmul (cuBLAS)."""
+        C_ref = torch.matmul(A, B.T)
+>       torch.testing.assert_close(C_tir, C_ref, rtol=rtol, atol=atol)
+E       AssertionError: Tensor-likes are not close!
+E       
+E       Mismatched elements: 14594107 / 16777216 (87.0%)
+E       Greatest absolute difference: 502.5 at index (2048, 1801) (up to 0.01 allowed)
+E       Greatest relative difference: inf at index (35, 2050) (up to 0.001 allowed)
+
+utils.py:34: AssertionError
+______________________________ test_cluster[8192] ______________________________
+
+size = 8192
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_cluster(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v9(M, N, K)
+        A, B, C = prepare_data(M, N, K)
+        C_tir = compile_and_run(kernel, A, B, C)
+>       verify(C_tir, A, B)
+
+tests/test_step09.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+C_tir = tensor([[  15.5078, -117.6250,   81.0000,  ...,    0.0000,    0.0000,
+            0.0000],
+        [ 218.8750,  -62.71...144.5000,    6.5703,   71.8750,  ...,    0.0000,    0.0000,
+            0.0000]], device='cuda:0', dtype=torch.float16)
+A = tensor([[ 0.6729,  0.3511,  1.1338,  ..., -1.3389, -0.9771,  0.7178],
+        [-0.9868,  0.0968, -0.4307,  ...,  0.490...5],
+        [-0.0081,  2.8809,  0.4758,  ..., -0.8296,  0.4788,  0.5332]],
+       device='cuda:0', dtype=torch.float16)
+B = tensor([[-1.5684,  0.0253, -1.1191,  ...,  0.1367, -0.1285, -1.0752],
+        [-0.1625,  0.0303, -0.6343,  ...,  1.114...9],
+        [ 0.3823, -0.2981, -0.8120,  ..., -1.0723, -0.4360,  1.5078]],
+       device='cuda:0', dtype=torch.float16)
+rtol = 0.001, atol = 0.01
+
+    def verify(C_tir, A, B, rtol=1e-3, atol=1e-2):
+        """Verify TIRX result against torch.matmul (cuBLAS)."""
+        C_ref = torch.matmul(A, B.T)
+>       torch.testing.assert_close(C_tir, C_ref, rtol=rtol, atol=atol)
+E       AssertionError: Tensor-likes are not close!
+E       
+E       Mismatched elements: 62018467 / 67108864 (92.4%)
+E       Greatest absolute difference: 715.5 at index (401, 4169) (up to 0.01 allowed)
+E       Greatest relative difference: inf at index (73, 3879) (up to 0.001 allowed)
+
+utils.py:34: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_step09.py::test_cluster[1024] - AssertionError: Tensor-like...
+FAILED tests/test_step09.py::test_cluster[2048] - AssertionError: Tensor-like...
+FAILED tests/test_step09.py::test_cluster[4096] - AssertionError: Tensor-like...
+FAILED tests/test_step09.py::test_cluster[8192] - AssertionError: Tensor-like...
+============================== 4 failed in 40.64s ==============================
+  Step 9 FAILED (exit code 1)
+
+Failed steps: [9]
+Stopping app - uncaught exception raised locally: SystemExit(1).
+Runner terminated.
+
+========================================
+Run completed at Tue Apr  7 23:10:13 EDT 2026
