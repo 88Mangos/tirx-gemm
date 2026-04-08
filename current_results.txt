@@ -1,0 +1,56 @@
+Step Results:
+----------------------------------------
+-----
+Test was not run with size=4096 on Modal, benchmark is 0.02 TFLOP/S
+-----
+Step  2: PASSED (size = 64, 0.02 TFLOP/S)
+Step  2: PASSED (size = 512, 0.02 TFLOP/S)
+Step  2: PASSED (size = 1024, 0.02 TFLOP/S)
+Step  2: PASSED (size = 4096, 0.02 TFLOP/S)
+Passes Benchmark for (size = 4096), since score of 0.02 TFLOP/S exceeds benchmark 0.02 TFLOP/S
+-----
+Step  3: PASSED (size = 256, 0.09 TFLOP/S)
+Step  3: PASSED (size = 512, 0.36 TFLOP/S)
+Step  3: PASSED (size = 1024, 1.43 TFLOP/S)
+Step  3: PASSED (size = 2048, 2.85 TFLOP/S)
+Test was not run with size=4096 on Modal, benchmark is 3 TFLOP/S
+-----
+Step  4: PASSED (size = 256, 2.63 TFLOP/S)
+Step  4: PASSED (size = 512, 18.46 TFLOP/S)
+Step  4: PASSED (size = 1024, 127.16 TFLOP/S)
+Step  4: PASSED (size = 2048, 328.62 TFLOP/S)
+Test was not run with size=4096 on Modal, benchmark is 330 TFLOP/S
+-----
+Step  5: PASSED (size = 512, 19.52 TFLOP/S)
+Step  5: PASSED (size = 1024, 167.06 TFLOP/S)
+Step  5: PASSED (size = 2048, 461.68 TFLOP/S)
+Step  5: PASSED (size = 4096, 493.56 TFLOP/S)
+FAILS Benchmark for (size = 4096), since score of 493.56 TFLOP/S lower than benchmark 639 TFLOP/S
+-----
+Step  6: PASSED (size = 1024, 147.80 TFLOP/S)
+Step  6: PASSED (size = 2048, 451.46 TFLOP/S)
+Step  6: PASSED (size = 4096, 549.75 TFLOP/S)
+Step  6: PASSED (size = 8192, 501.92 TFLOP/S)
+FAILS Benchmark for (size = 4096), since score of 549.75 TFLOP/S lower than benchmark 723 TFLOP/S
+-----
+Step  7: PASSED (size = 1024, 168.59 TFLOP/S)
+Step  7: PASSED (size = 2048, 584.15 TFLOP/S)
+Step  7: PASSED (size = 4096, 583.58 TFLOP/S)
+Step  7: PASSED (size = 8192, 532.44 TFLOP/S)
+FAILS Benchmark for (size = 4096), since score of 583.58 TFLOP/S lower than benchmark 603 TFLOP/S
+-----
+Step  8: PASSED (size = 1024, 147.15 TFLOP/S)
+Step  8: PASSED (size = 2048, 828.08 TFLOP/S)
+Step  8: PASSED (size = 4096, 1045.30 TFLOP/S)
+Step  8: PASSED (size = 8192, 993.00 TFLOP/S)
+FAILS Benchmark for (size = 4096), since score of 1045.3 TFLOP/S lower than benchmark 1057 TFLOP/S
+-----
+Step  9: PASSED (size = 1024, 165.10 TFLOP/S)
+Step  9: PASSED (size = 2048, 897.83 TFLOP/S)
+Step  9: PASSED (size = 4096, 1305.67 TFLOP/S)
+Step  9: PASSED (size = 8192, 1441.91 TFLOP/S)
+Passes Benchmark for (size = 4096), since score of 1305.67 TFLOP/S exceeds benchmark 1238 TFLOP/S
+-----
+Step 10: FAILED
+----------------------------------------
+Some steps failed.
