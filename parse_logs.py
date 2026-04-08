@@ -1,10 +1,13 @@
 import re
 import sys
 
+# from lec slides https://mlsyscourse.org/slides/tirx-gemm/#/35
+BENCHMARK4096 = [0.02, 0.02, 3, 330, 639, 723, 603, 1057, 1238, 1322]
+
 
 def parse_log_file(file_path):
     # Initialize results dictionary
-    results = {i: {"passed": False, "tflops": None} for i in range(1, 11)}
+    results = {i: {"passed": False, "perf": {}} for i in range(1, 11)}
 
     try:
         with open(file_path, "r") as f:
@@ -14,16 +17,18 @@ def parse_log_file(file_path):
         return
 
     # Pattern to match the full test line with TFLOPS
-    test_line_pattern = re.compile(r"tests/test_step(\d+)\.py::test_.*?(\d+\.?\d*) TFLOP/S")
+    # https://regex101.com/r/T4ZSoH/1
+    # test_line_pattern = re.compile(r"tests\/test_step(\d+)\.py::test_k_loop\[(\d+)\] .*? (\d+\.?\d*) TFLOP\/S")
+    test_line_pattern = re.compile(r"tests\/test_step(\d+)\.py::test_.*?\[(\d+)\] .*? (\d+\.?\d*) TFLOP\/S")
 
     # Pattern to match PASSED status
     passed_pattern = re.compile(r"PASSED")
 
-    # Pattern to match step execution messages
-    step_execution_pattern = re.compile(
-        r"Running step (\d+):|"
-        r"Step (\d+) passed\."
-    )
+    # # Pattern to match step execution messages
+    # step_execution_pattern = re.compile(
+    #     r"Running step (\d+):|"
+    #     r"Step (\d+) passed\."
+    # )
 
     # Pattern to match test session starts (to separate test blocks)
     session_pattern = re.compile(r"============================= test session starts ==============================")
@@ -41,24 +46,10 @@ def parse_log_file(file_path):
 
         # Find step number from the first test line
         if test_lines:
-            step_num = int(test_lines[0][0])
-
-            # Check if any test in this block PASSED
-            if passed_pattern.search(block):
-                results[step_num]["passed"] = True
-
-                # Extract the maximum TFLOPS from all subtests in this step
-                tflops_values = []
-                for match in test_line_pattern.finditer(block):
-                    try:
-                        tflops = float(match.group(2))
-                        tflops_values.append(tflops)
-                    except ValueError:
-                        continue
-
-                if tflops_values:
-                    # Use the maximum TFLOPS value (or you could use average)
-                    results[step_num]["tflops"] = max(tflops_values)
+            for test_line in test_lines:
+                step_num, size, tflops = test_line
+                step_num = int(step_num)
+                results[step_num]["perf"][size] = tflops
 
         # Also check for "Step X passed" messages
         step_passed_matches = re.findall(r"Step (\d+) passed\.", block)
@@ -72,12 +63,27 @@ def parse_log_file(file_path):
 
     all_passed = True
     for step_num in range(1, 11):
+        print("-----")
         result = results[step_num]
         status = "PASSED" if result["passed"] else "FAILED"
 
         if result["passed"]:
-            tflops_str = f"{result['tflops']:.2f} TFLOP/S" if result["tflops"] is not None else "N/A"
-            print(f"Step {step_num:2d}: {status} ({tflops_str})")
+            # print(result["perf"])
+            for size, tflops in result["perf"].items():
+                tflops_str = f"size = {size}, {tflops} TFLOP/S" if result["perf"][size] is not None else "N/A"
+
+                print(f"Step {step_num:2d}: {status} ({tflops_str})")
+            
+            benchmark = BENCHMARK4096[step_num - 1]
+            try:
+                score4096 = float(result["perf"]["4096"])
+                if score4096 >= benchmark:
+                    print(f"Passes Benchmark for (size = 4096), since score of {score4096} TFLOP/S exceeds benchmark {benchmark} TFLOP/S")
+                else:
+                    print(f"FAILS Benchmark for (size = 4096), since score of {score4096} TFLOP/S lower than benchmark {benchmark} TFLOP/S")
+            except KeyError:
+                print(f"Test was not run with size=4096 on Modal, benchmark is {benchmark} TFLOP/S")
+
         else:
             print(f"Step {step_num:2d}: {status}")
 
