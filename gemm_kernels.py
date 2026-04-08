@@ -1357,12 +1357,11 @@ def hgemm_v9(M, N, K):
             """ 
             Given a cluster containing CTA_GROUP=2 CTAs (SMs), which have distributed SMEM,
             now the CTAs can also cooperate within the cluster to increase arithmetic intensity.
-
-
             """
             # NOTE: since the cluster is CTA_GROUP=2 by 1, cby=0 always, so ignore cby
             cbx, _cby = Tx.cta_id([CTA_GROUP, 1], parent="cluster")  # cluster CTA ID - position within the cluster
             bx = Tx.cta_id([SM_COUNT], parent="kernel")  # kernel CTA ID - which SM (CTA)
+
             wg_id = Tx.warpgroup_id([WG_NUMBER], parent="cta")
             warp_id = Tx.warp_id([WARPS_PER_WG], parent="warpgroup")
             lane_id = Tx.thread_id([THREADS_PER_WARP], parent="warp")
@@ -1382,7 +1381,6 @@ def hgemm_v9(M, N, K):
             pool.move_base_to(1024)
             Asmem = pool.alloc((PIPE_DEPTH, BLK_M, BLK_K), a_type, layout=A_layout)
             Bsmem = pool.alloc((PIPE_DEPTH, BLK_N, BLK_K), b_type, layout=B_layout)
-            # pool.move_base_to(1024)  # NOTE: Reset the base to 1024 so Dsmem reuses Asmem/Bsmem space.
             Dsmem = pool.alloc((BLK_M, EPI_N), d_type, layout=D_layout)
             pool.commit()
 
@@ -1428,7 +1426,7 @@ def hgemm_v9(M, N, K):
 
                         if cbx == 0:
                             tma2mma.arrive(tma_phase.stage, byte_count)
-                            tma_phase.move_to_next_stage()  # advance from loading stage to blocking stage
+                        tma_phase.move_to_next_stage()  # advance from loading stage to blocking stage
 
                     @Tx.inline
                     def tma_load(m_st, n_st):
