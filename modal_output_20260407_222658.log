@@ -1,0 +1,789 @@
+========================================
+Modal run output - Started at Tue Apr  7 22:26:58 EDT 2026
+Steps: 9
+========================================
+Running: modal run run_modal.py --step 9
+
+✓ Initialized. View run at https://modal.com/apps/tylery/main/ap-CtkygQgf0T7pFAwJYcySyW
+✓ Created objects.
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm/run_modal.py
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm
+├── 🔨 Created function run_tests.
+└── 🔨 Created function run_inspect.
+Running step 9: tests/test_step09.py
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 13.0.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace
+configfile: pyproject.toml
+[02:27:12] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[02:27:12] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[02:27:12] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[02:27:12] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[02:27:12] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[02:27:12] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+collecting ... collected 4 items
+
+error: Function must be decorated
+ --> /workspace/tests/../gemm_kernels.py:1470:25
+      |  
+ 1470 |                          def mma():
+      |                          ^^^^^^^^^^
+tests/test_step09.py::test_cluster[1024] FAILED
+error: Function must be decorated
+ --> /workspace/tests/../gemm_kernels.py:1470:25
+      |  
+ 1470 |                          def mma():
+      |                          ^^^^^^^^^^
+tests/test_step09.py::test_cluster[2048] FAILED
+error: Function must be decorated
+ --> /workspace/tests/../gemm_kernels.py:1470:25
+      |  
+ 1470 |                          def mma():
+      |                          ^^^^^^^^^^
+tests/test_step09.py::test_cluster[4096] FAILED
+error: Function must be decorated
+ --> /workspace/tests/../gemm_kernels.py:1470:25
+      |  
+ 1470 |                          def mma():
+      |                          ^^^^^^^^^^
+tests/test_step09.py::test_cluster[8192] FAILED
+
+=================================== FAILURES ===================================
+______________________________ test_cluster[1024] ______________________________
+
+size = 1024
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_cluster(size):
+        M, N, K = size, size, size
+>       kernel = hgemm_v9(M, N, K)
+                 ^^^^^^^^^^^^^^^^^
+
+tests/test_step09.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+gemm_kernels.py:1349: in hgemm_v9
+    @Tx.prim_func(tirx=True)
+     ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/entry.py:70: in decorator_wrapper
+    f = parse(
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/entry.py:110: in parse
+    parser.parse(extra_vars=extra_vars)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:407: in parse
+    self.visit(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/doc.py:250: in generic_visit
+    self.visit(value)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:650: in visit
+    self.visit(item)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:715: in visit_FunctionDef
+    _dispatch_wrapper(func)(self, node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:639: in visit_function_def
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:799: in visit_With
+    return _dispatch(self, "With")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:584: in visit_with
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:763: in visit_if
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:767: in visit_if
+    self.visit_body(node.orelse)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:763: in visit_if
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:763: in visit_if
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:705: in visit_FunctionDef
+    token = self.get_dispatch_token(node)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:413: in get_dispatch_token
+    self.report_error(node, "Function must be decorated")
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:633: in report_error
+    raise diag_err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:624: in report_error
+    self.diag.error(node, msg)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/diagnostics.py:257: in error
+    self.ctx.render()
+/usr/local/lib/python3.12/site-packages/tvm/ir/diagnostics/__init__.py:121: in render
+    _ffi_api.DiagnosticContextRender(self)
+python/tvm_ffi/cython/function.pxi:929: in tvm_ffi.core.Function.__call__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   tvm.error.DiagnosticError: one or more error diagnostics were emitted, please check diagnostic render for output.
+
+/workspace/tvm/src/ir/diagnostic.cc:167: DiagnosticError
+______________________________ test_cluster[2048] ______________________________
+
+size = 2048
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_cluster(size):
+        M, N, K = size, size, size
+>       kernel = hgemm_v9(M, N, K)
+                 ^^^^^^^^^^^^^^^^^
+
+tests/test_step09.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+gemm_kernels.py:1349: in hgemm_v9
+    @Tx.prim_func(tirx=True)
+     ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/entry.py:70: in decorator_wrapper
+    f = parse(
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/entry.py:110: in parse
+    parser.parse(extra_vars=extra_vars)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:407: in parse
+    self.visit(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/doc.py:250: in generic_visit
+    self.visit(value)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:650: in visit
+    self.visit(item)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:715: in visit_FunctionDef
+    _dispatch_wrapper(func)(self, node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:639: in visit_function_def
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:799: in visit_With
+    return _dispatch(self, "With")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:584: in visit_with
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:763: in visit_if
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:767: in visit_if
+    self.visit_body(node.orelse)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:763: in visit_if
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:763: in visit_if
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:705: in visit_FunctionDef
+    token = self.get_dispatch_token(node)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:413: in get_dispatch_token
+    self.report_error(node, "Function must be decorated")
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:633: in report_error
+    raise diag_err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:624: in report_error
+    self.diag.error(node, msg)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/diagnostics.py:257: in error
+    self.ctx.render()
+/usr/local/lib/python3.12/site-packages/tvm/ir/diagnostics/__init__.py:121: in render
+    _ffi_api.DiagnosticContextRender(self)
+python/tvm_ffi/cython/function.pxi:929: in tvm_ffi.core.Function.__call__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   tvm.error.DiagnosticError: one or more error diagnostics were emitted, please check diagnostic render for output.
+
+/workspace/tvm/src/ir/diagnostic.cc:167: DiagnosticError
+______________________________ test_cluster[4096] ______________________________
+
+size = 4096
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_cluster(size):
+        M, N, K = size, size, size
+>       kernel = hgemm_v9(M, N, K)
+                 ^^^^^^^^^^^^^^^^^
+
+tests/test_step09.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+gemm_kernels.py:1349: in hgemm_v9
+    @Tx.prim_func(tirx=True)
+     ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/entry.py:70: in decorator_wrapper
+    f = parse(
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/entry.py:110: in parse
+    parser.parse(extra_vars=extra_vars)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:407: in parse
+    self.visit(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/doc.py:250: in generic_visit
+    self.visit(value)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:650: in visit
+    self.visit(item)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:715: in visit_FunctionDef
+    _dispatch_wrapper(func)(self, node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:639: in visit_function_def
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:799: in visit_With
+    return _dispatch(self, "With")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:584: in visit_with
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:763: in visit_if
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:767: in visit_if
+    self.visit_body(node.orelse)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:763: in visit_if
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:763: in visit_if
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:705: in visit_FunctionDef
+    token = self.get_dispatch_token(node)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:413: in get_dispatch_token
+    self.report_error(node, "Function must be decorated")
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:633: in report_error
+    raise diag_err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:624: in report_error
+    self.diag.error(node, msg)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/diagnostics.py:257: in error
+    self.ctx.render()
+/usr/local/lib/python3.12/site-packages/tvm/ir/diagnostics/__init__.py:121: in render
+    _ffi_api.DiagnosticContextRender(self)
+python/tvm_ffi/cython/function.pxi:929: in tvm_ffi.core.Function.__call__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   tvm.error.DiagnosticError: one or more error diagnostics were emitted, please check diagnostic render for output.
+
+/workspace/tvm/src/ir/diagnostic.cc:167: DiagnosticError
+______________________________ test_cluster[8192] ______________________________
+
+size = 8192
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_cluster(size):
+        M, N, K = size, size, size
+>       kernel = hgemm_v9(M, N, K)
+                 ^^^^^^^^^^^^^^^^^
+
+tests/test_step09.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+gemm_kernels.py:1349: in hgemm_v9
+    @Tx.prim_func(tirx=True)
+     ^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/entry.py:70: in decorator_wrapper
+    f = parse(
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/entry.py:110: in parse
+    parser.parse(extra_vars=extra_vars)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:407: in parse
+    self.visit(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/doc.py:250: in generic_visit
+    self.visit(value)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:650: in visit
+    self.visit(item)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:715: in visit_FunctionDef
+    _dispatch_wrapper(func)(self, node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:639: in visit_function_def
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:799: in visit_With
+    return _dispatch(self, "With")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:584: in visit_with
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:763: in visit_if
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:767: in visit_if
+    self.visit_body(node.orelse)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:763: in visit_if
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:859: in visit_If
+    return _dispatch(self, "If")(self, node)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:339: in _wrapper
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:337: in _wrapper
+    return func(self, node)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/tir/parser.py:763: in visit_if
+    self.visit_body(node.body)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:680: in visit_body
+    self.visit(stmt)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:664: in visit
+    self.report_error(node, err)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:613: in report_error
+    raise err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:662: in visit
+    func(node)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:705: in visit_FunctionDef
+    token = self.get_dispatch_token(node)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:413: in get_dispatch_token
+    self.report_error(node, "Function must be decorated")
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:633: in report_error
+    raise diag_err
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/parser.py:624: in report_error
+    self.diag.error(node, msg)
+/usr/local/lib/python3.12/site-packages/tvm/script/parser/core/diagnostics.py:257: in error
+    self.ctx.render()
+/usr/local/lib/python3.12/site-packages/tvm/ir/diagnostics/__init__.py:121: in render
+    _ffi_api.DiagnosticContextRender(self)
+python/tvm_ffi/cython/function.pxi:929: in tvm_ffi.core.Function.__call__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   tvm.error.DiagnosticError: one or more error diagnostics were emitted, please check diagnostic render for output.
+
+/workspace/tvm/src/ir/diagnostic.cc:167: DiagnosticError
+=========================== short test summary info ============================
+FAILED tests/test_step09.py::test_cluster[1024] - tvm.error.DiagnosticError: ...
+FAILED tests/test_step09.py::test_cluster[2048] - tvm.error.DiagnosticError: ...
+FAILED tests/test_step09.py::test_cluster[4096] - tvm.error.DiagnosticError: ...
+FAILED tests/test_step09.py::test_cluster[8192] - tvm.error.DiagnosticError: ...
+============================== 4 failed in 7.83s ===============================
+  Step 9 FAILED (exit code 1)
+
+Failed steps: [9]
+Stopping app - uncaught exception raised locally: SystemExit(1).
+Runner terminated.
+
+========================================
+Run completed at Tue Apr  7 22:27:22 EDT 2026

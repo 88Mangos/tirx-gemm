@@ -1414,29 +1414,34 @@ def hgemm_v9(M, N, K):
                     tma_phase.init(is_producer=True)
 
                     @Tx.inline
-                    def tma_load_stage(k_st):
-                        # --- wait for MMA to signal TMA that it's not using SMEM ---
-                        mma2tma.wait(tma_phase.stage, tma_phase.phase)
+                    def tma_load_stage(stage, k_st, m_st, n_st):
+                        """
+                        1. Wait for MMA to signal TMA that it's not using SMEM
+                        2. asynchronously copy from GMEM into SMEM, using CTA_GROUP=2
+                        3. use CTA_0 to signal MMA that data is loaded
+                        """
+                        mma2tma.wait(stage, tma_phase.phase)
 
                         byte_count = CTA_GROUP * (BLK_M * BLK_K + BLK_N * BLK_K) * DTYPE_SIZE
-                        Tx.copy_async(Asmem[tma_phase.stage, :, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", cta_group=CTA_GROUP, mbar=tma2mma_cta0.ptr_to([tma_phase.stage]))
-                        Tx.copy_async(Bsmem[tma_phase.stage, :, :], B[n_st : n_st + BLK_N, k_st : k_st + BLK_K], dispatch="tma", cta_group=CTA_GROUP, mbar=tma2mma_cta0.ptr_to([tma_phase.stage]))
+                        Tx.copy_async(Asmem[stage, :, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", cta_group=CTA_GROUP, mbar=tma2mma_cta0.ptr_to([stage]))
+                        Tx.copy_async(Bsmem[stage, :, :], B[n_st : n_st + BLK_N, k_st : k_st + BLK_K], dispatch="tma", cta_group=CTA_GROUP, mbar=tma2mma_cta0.ptr_to([stage]))
 
-                        # (use CTA_0) --- TMA signals MMA that data has been loaded from GMEM into SMEM ---
                         if cbx == 0:
                             tma2mma.arrive(tma_phase.stage, byte_count)
                             tma_phase.move_to_next_stage()  # advance from loading stage to blocking stage
 
                     @Tx.inline
-                    def tma_load():
+                    def tma_load(m_st, n_st):
+                        """
+                        For each tile needed for MMA, load the tile into cluster's distributed SMEM
+                        """
                         for k in Tx.serial(K_TILES):
-                            k_st = k * BLK_K
-                            tma_load_stage(k_st)
+                            tma_load_stage(tma_phase.stage, k * BLK_K, m_st, n_st)
 
                     with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
                         while tile_scheduler.valid():
                             m_st, n_st = Tx.meta_var((tile_scheduler.m_idx + cbx) * BLK_M), Tx.meta_var((tile_scheduler.m_idx + cbx) * BLK_N)
-                            tma_load()
+                            tma_load(m_st, n_st)
                             tile_scheduler.next_tile()
 
                 # --- MMA Consumer (WG1/warp0) ---
@@ -1450,27 +1455,31 @@ def hgemm_v9(M, N, K):
 
                         @Tx.inline
                         def mma_stage(stage, accum):
-                            # --- wait for TMA to signal to MMA that data has been loaded into SMEM
+                            """
+                            1. wait for TMA to signal to MMA that data has been loaded into SMEM
+                            2. issue MMA (only on CTA_0)
+                            3. MMA signals to TMA that SMEM has been consumed, and is now free for another load
+                            """
                             tma2mma.wait(stage, mma_phase.phase)
 
-                            Tx.gemm_async(tmem[:, :MMA_N], Asmem[stage, :, :], Bsmem[mmphase.stage, :, :], accum=accum, dispatch="tcgen05", cta_group=CTA_GROUP)  # noqa F821 # type: ignore
-                            pass
+                            Tx.gemm_async(tmem[:, :MMA_N], Asmem[stage, :, :], Bsmem[stage, :, :], accum=accum, dispatch="tcgen05", cta_group=CTA_GROUP)  # noqa F821 # type: ignore
 
+                            mma2tma.arrive(stage, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
+                            mma_phase.move_to_next_stage()
+
+                        @Tx.inline
                         def mma():
-                            # --- wait for Writeback to signal to MMA that TMEM has been successfully written to GMEM ---
-                            ld2mma.wait(0, ld_phase.phase)
-
-                            # now we can use TMEM for GEMM!
+                            """
+                            1. wait for Writeback to signal to MMA that TMEM has been successfully written to GMEM
+                            2. For each tile to MMA, issue the MMA instruction
+                            3. MMA signals to Writeback that TMEM has been filled and should now be sent back to GMEM
+                            """
+                            ld2mma.wait(0, ld_phase.phase)  # now we can use TMEM for GEMM!
                             ld_phase.move_to_next_stage()  # move from writeback stage to blocking stage
-                            accum = 0  # False initially, overwrites TMEM.
 
                             for k in Tx.serial(K_TILES):
                                 mma_stage(mma_phase.stage, k != 0)
-                                # --- MMA signals to TMA that SMEM has been consumed, and is now free for another load
-                                mma2tma.arrive(mma_phase.stage, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
-                                mma_phase.move_to_next_stage()  # move from GEMM stage to blocking stage
 
-                            # --- MMA signals to Writeback that TMEM has been filled and should now be sent back to GMEM ---
                             mma2ld.arrive(0, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
 
                         with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
@@ -1484,8 +1493,12 @@ def hgemm_v9(M, N, K):
                 wb_phase.init(is_producer=False)
 
                 @Tx.inline
-                def move_result_to_SMEM():
-                    """TMEM → Reg → SMEM"""
+                def move_result_to_SMEM(Dreg_f16):
+                    """
+                    TMEM → Reg
+                    In chunks of size TMEM_LD_N, write result from TMEM into local register
+                    and cast back down to the result type d_type=float16.
+                    """
                     for no in Tx.unroll(MMA_N // TMEM_LD_N):
                         no_st = Tx.meta_var(no * TMEM_LD_N)
                         Dreg = Tx.alloc_local((TMEM_LD_N,), acc_type)  # tmp register
@@ -1498,8 +1511,13 @@ def hgemm_v9(M, N, K):
                             Tx.cast(Dreg_f16[no_st : no_st + TMEM_LD_N], Dreg[:])
 
                 @Tx.inline
-                def tma_store():
-                    """SMEM → GMEM"""
+                def epilogue(m_st, n_st, Dreg_f16):
+                    """
+                    Reg → SMEM → GMEM
+                    1. In chunks of size EPI_N, write EPI_N-col slices of the result from local register to SMEM,
+                    2. make these writes visible to the TMA engine,
+                    3. then issue TMA instructions to asynchronously copy these slices into GMEM
+                    """
                     for no in Tx.unroll(MMA_N // EPI_N):
                         no_st = Tx.meta_var(no * EPI_N)
                         n_epi_st = Tx.meta_var(n_st + no_st)
@@ -1523,19 +1541,23 @@ def hgemm_v9(M, N, K):
 
                 while tile_scheduler.valid():
                     m_st, n_st = Tx.meta_var(tile_scheduler.m_idx * BLK_M), Tx.meta_var(tile_scheduler.n_idx * BLK_N)
-                    # --- wait for MMA to signal to Writeback that TMEM has been filled and should now be sent back to GMEM ---
-                    mma2ld.wait(0, wb_phase.phase)
-                    # now we can write out our TMEM!
-                    wb_phase.move_to_next_stage()
-                    Tx.ptx.tcgen05.fence.after_thread_sync()  # make TMEM visible to TMA
 
                     # ── Writeback: TMEM → Reg → SMEM → GMEM ──
-                    # use a temporary register and write back in n=TMEM_LD_N chunks
+                    """ 
+                    1. wait for MMA to signal to Writeback that TMEM has been filled and should now be sent back to GMEM
+                    2. use a temporary register to move result from TMEM into registers in chunks of size TMEM_LD_N cols
+                    3. Writeback signals to MMA that all threads done writing from TMEM to Reg to SMEM, let MMA know that TMEM is free 
+                    4. move results from that temporary register into SMEM and make it visible to TMA 
+                    """
+                    mma2ld.wait(0, wb_phase.phase)
+                    wb_phase.move_to_next_stage()  # now we can write out our TMEM!
+                    Tx.ptx.tcgen05.fence.after_thread_sync()  # make TMEM visible to TMA
+
                     Dreg_f16 = Tx.alloc_local((MMA_N,), d_type)
-                    move_result_to_SMEM()
-                    # --- Writeback signals to MMA that all threads done writing from TMEM to Reg to SMEM, let MMA know that TMEM is free ---
+                    move_result_to_SMEM(Dreg_f16)
                     ld2mma.arrive(0, cta_id=0, pred=True)
-                    tma_store()
+                    epilogue(m_st, n_st, Dreg_f16)
+
                     tile_scheduler.next_tile()
 
             Tx.cuda.cluster_sync()
