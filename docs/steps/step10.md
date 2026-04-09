@@ -91,7 +91,7 @@ A, B, and D blocks all have space in SMEM.
 ```
 - `Asmem = pool.alloc((PIPE_DEPTH, NUM_CONSUMER, BLK_M, BLK_K), ...)` — 2 A blocks per stage
 - `mma2tma.init(NUM_CONSUMER)` — each stage expects 2 arrivals (one per MMA warp)
-- `mma2ld = TCGen05Bar(pool, NUM_CONSUMER, ...)` and `ld2mma = MBarrier(pool, NUM_CONSUMER, ...)` — one shared object each with `depth=NUM_CONSUMER` (2 slots), **not** separate objects per consumer. Use `warp_id` / `wg_id` as the slot index (not `PipelineState.stage`): `mma2ld.arrive(warp_id, ...)`, `mma2ld.wait(wg_id, ...)`
+- `mma2ld = TCGen05Bar(pool, NUM_CONSUMER, ...)` and `ld2mma = MBarrier(pool, NUM_CONSUMER, ...)` — one shared object each with `depth=NUM_CONSUMER` (2 slots), **not** separate objects per consumer. 
 - `mma2ld.init(1)` — each slot expects 1 arrival (one MMA warp)
 - `ld2mma.init(128 * CTA_GROUP)` — each slot expects 256 arrivals (all writeback WG threads across both CTAs)
 
@@ -100,12 +100,19 @@ A, B, and D blocks all have space in SMEM.
 
 Recall that in this 2-CTA cluster, like in Step 9, CTA 0 issues the MMA instructions.
 
+- Use `warp_id` / `wg_id` as the slot index (not `PipelineState.stage`): `mma2ld.arrive(warp_id, ...)`, `mma2ld.wait(wg_id, ...)`
+
 ## TMA Load
 - TMA loads both `Asmem[stage, 0, :, :]` and `Asmem[stage, 1, :, :]`
 
 ## MMA 
 - MMA warp `warp_id` selects which A block: `Asmem[stage, warp_id, :, :]`
 - MMA output offset: `tmem[:, warp_id * MMA_N : warp_id * MMA_N + MMA_N]`
+```python
+# MMA consumer logic, which we can re-use across warp 0 and warp 1
+# warp 0 writes into TMEM[:, 0:256], warp 1 writes into TMEM[:, 256:512]
+# succinctly summarized as tmem[:, warp_id * MMA_N=256, warp_id * MMA_N=256 + MMA_N=256]
+```
 - TMA arrive bytes: `CTA_GROUP * (NUM_CONSUMER * BLK_M * BLK_K + BLK_N * BLK_K) * DTYPE_SIZE` — 2 A blocks + 1 B block per CTA
 
 # Writeback 
