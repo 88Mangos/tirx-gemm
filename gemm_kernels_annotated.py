@@ -1,3 +1,54 @@
+"""
+Notes for Tyler (tylery):
+To keep the code readable, only comment for
+- Synchronization Rules: Explaining why a barrier is placed somewhere.
+- Hardware Mapping: Documenting thread/warp/block responsibilities.
+- Memory Layouts: High-level notes on tile sizes or swizzling.
+Words to comment with:  TODO FIXME XXX NOTE HACK BUG
+
+To avoid writing semantically meaningless code, magic numbers have been declared at the global scope.
+NOTE: [from README.md] Constants must be defined outside @Tx.prim_func.
+  Variables like EPI_N, TMEM_LD_N, MMA_N must be Python constants defined alongside BLK_M, BLK_K, etc.
+  Variables assigned inside the kernel function become TIR dynamic variables, which causes errors when used in buffer slicing.
+
+
+Glossary:
+  Acronyms:
+    GMEM/HBM    : High-Bandwidth Global Memory
+    SMEM        : Shared Memory (per-thread)
+    SM          : streaming multiprocessor
+    TMA         : tensor memory accelerator
+    CTA         : collaborative thread array
+    WG          : warpgroup
+    MMA         : matrix multiply and accumulate
+    GEMM        : general matrix multiplication
+
+  Common Variable Patterns:
+    tmem_addr   : Slot to store the TMEM base address returned by tcgen05.alloc
+    mma_bar     : mbarrier for MMA completion signaling
+    tma_bar     : mbarrier for TMA completion signaling
+    *_st        : [*] stride
+
+NOTE: [from README.md, step 4] Use @Tx.inline to define helper functions (e.g., tma_load, mma) inside the kernel.
+  These are inlined at compile time and can capture outer variables like Asmem, tma_bar, etc.
+  I use "# pyright: ignore[reportUnboundVariable]" whenever Pyright fails to capture the variable and allow it to be modified.
+
+NOTE: A common pattern seen is
+  warp_id * THREADS_PER_WARP + lane_id = thread_id
+  Recall that warpgroups have 128 threads. So to compute the thread_id,
+    warp_id from 0-3 tells us which of the 4 (WARPS_PER_WG) warps the thread belongs to
+    mult by 32 (THREADS_PER_WARP) to shift to starting position of the warp given by warp_id
+    lane_id adds the threads specific position within its assigned warp.
+
+
+TODO: refactor all the mbarriers to use the semantically correct ones instead of manual allocation.
+Will probably have to tinker with the pyi?
+
+TODO: refactor inlined functions to make semantic sense: wait -> command -> arrival queued
+
+TODO: make gemm_async use MMA_N, not BLK_N
+"""
+
 import tvm
 from tvm.script import tirx as Tx
 
@@ -1582,22 +1633,10 @@ def hgemm_v10(M, N, K):
             if wg_id == 0:
                 if warp_id == 0:
                     if lane_id == 0:
-                        # Initialize expected arrival counts
                         tma2mma.init(1)
                         mma2tma.init(NUM_CONSUMER)
                         mma2ld.init(1)
                         ld2mma.init(128 * CTA_GROUP)
-
-                        # Pre-arrive on barriers protecting initially free memory
-                        # SMEM is free for all pipeline stages:
-                        for stage in Tx.serial(PIPE_DEPTH):
-                            for _ in Tx.serial(NUM_CONSUMER):
-                                mma2tma.arrive(stage, cta_group=1, cta_mask=1)
-
-                        # TMEM is free for the first tile
-                        for i in Tx.serial(128 * CTA_GROUP):
-                            ld2mma.arrive(0, cta_id=0, pred=True)
-                            ld2mma.arrive(1, cta_id=0, pred=True)
 
                         # accumulate both 128 x 256 subresults into TMEM of size 128 x 512
                         Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=CTA_GROUP)
@@ -1617,6 +1656,25 @@ def hgemm_v10(M, N, K):
 
             @Tx.inline
             def tma_load_stage(stage, k_st, m_st, n_st, tma_phase):
+                """
+                Load from GMEM → SMEM using TMA engine
+
+                (1) Wait on MMA to signal that it needs data
+                (2) TMA arrive bytes:
+                  Per CTA = CTA_GROUP, times
+                     2 A blocks + 1 B block = NUM_CONSUMER * BLK_M * BLK_K + BLK_N * BLK_K elements
+                      each item in the block has size DTYPE_SIZE
+                (3) For each of the NUM_CONSUMER=2 consumers, load their A block into SMEM
+                (4) Load B block into SMEM
+                (5) CTA_0 signals with arrive.expect_tx ( n_bytes = TMA arrive bytes )
+                    "Yo I started giving you data, I'll lyk when all the bytes are loaded"
+                (6) advance TMA pipeline phase to the next stage
+
+                Slang Summary:
+                   MMA to TMA: I need more data m8...
+                   TMA: alr I gotchu let me load 2 A blocks and 1 B block
+                   TMA to MMA: Your data is ready m8!
+                """
                 mma2tma.wait(stage, tma_phase.phase)
 
                 byte_count = CTA_GROUP * (NUM_CONSUMER * BLK_M * BLK_K + BLK_N * BLK_K) * DTYPE_SIZE
@@ -1641,15 +1699,47 @@ def hgemm_v10(M, N, K):
             # ======================================================================
             @Tx.inline
             def mma_stage(stage, accum, warp_id, mma_phase):
+                """
+                Dispatch MMA instruction to 5th Gen Tensor Cores
+
+                (1) Wait on TMA to signal that data is fully loaded into SMEM
+                (2) Issue MMA instr, using the warp_id to determine the destination
+                  warp 0 uses
+                    the first A block stored in Asmem[stage, 0, :, :]
+                    the B block stored in Bsmem[stage, :, :]
+                    and writes into TMEM[:, 0:256]
+                  warp 1 uses
+                    the second A block stored in Asmem[stage, 1, :, :]
+                    the B block stored in Bsmem[stage, :, :]
+                    and writes into TMEM[:, 256:512]
+                (3) signal with arrival that consumer with id=warp_id has finished MMA,
+                (4) advance MMA pipeline phase to the next stage
+
+                Slang Summary:
+                  TMA to MMA: Your data is ready m8!
+                  MMA: thanks man! Tcgen05, matmul my data pls.
+                  MMA to TMA: Matmul done, I'm done using ur data m8!
+                    Lwk... I need more data m8...
+                """
                 tma2mma.wait(stage, mma_phase.phase)
 
-                # Tx.gemm_async(tmem[:, warp_id * MMA_N : (warp_id + 1) * MMA_N], Asmem[stage, warp_id, :, :], Bsmem[stage, :, :], accum=accum, dispatch="tcgen05", cta_group=CTA_GROUP)
+                Tx.gemm_async(tmem[:, warp_id * MMA_N : (warp_id + 1) * MMA_N], Asmem[stage, warp_id, :, :], Bsmem[stage, :, :], accum=accum, dispatch="tcgen05", cta_group=CTA_GROUP)
 
                 mma2tma.arrive(stage, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
                 mma_phase.move_to_next_stage()
 
             @Tx.inline
             def mma(warp_id, mma_phase, ld_phase):
+                """
+                Slang Summary:
+                  Writeback to MMA: I'm done writing your results from TMEM!
+                  Move the loading phase back to a waiting stage.
+
+                then call wrapper for mma_stage, for each sub-tile in a scheduled output tile
+
+                Slang Summary (Ctd.):
+                  MMA to Writeback: I got another result for you, write my result to GMEM pls.
+                """
                 # Wait for YOUR specific writeback WG to say TMEM is free
                 ld2mma.wait(warp_id, ld_phase.phase)
                 ld_phase.move_to_next_stage()
@@ -1666,6 +1756,16 @@ def hgemm_v10(M, N, K):
             # ======================================================================
             @Tx.inline
             def tmem_to_reg(wg_id, Dreg_f16):
+                """
+                TMEM → Local Registers
+                Load from TMEM in chunks of size TMEM_LD_N. For each chunk:
+
+                (1) Allocate a temporary register of size TMEM_LD_N
+                (2) All threads in the warpgroup work together to write a chunk from TMEM → Reg
+                (3) Per-thread cast from acc_type=float32 to d_type=float16,
+                  since we computed our accumulated matmul result in a higher precision
+                  to avoid overflow errors. Store this result in the float16 register passed in.
+                """
                 for no in Tx.unroll(MMA_N // TMEM_LD_N):
                     no_st = Tx.meta_var(no * TMEM_LD_N)
                     # Shift the TMEM read over by 256 columns for WG 1
@@ -1682,7 +1782,23 @@ def hgemm_v10(M, N, K):
 
             @Tx.inline
             def epilogue(wg_id, m_st, n_st, Dreg_f16):
+                """
+                Local Registers → SMEM, then SMEM → GMEM via TMA engine
+                Load from registers in chunks of size EPI_N in the epilogue. For each chunk:
+
+                (1) Per-thread write a slice of EPI_N columns from Local Registers → SMEM
+                  Make these writes visible to the TMA engine
+                (2) Synchronize: wait until all threads are done writing to SMEM
+                (3) Issue a TMA store from elected thread 0
+                (4) To avoid overwriting Asmem/Bsmem/Dsmem, commit and wait
+                (5) Synchronize: the entire warpgroup needs to be done with this chunk
+                  before moving onto the next.
+                """
                 for no in Tx.unroll(MMA_N // EPI_N):
+                    # NOTE: because the GPU registers cannot hold MMA_N=256 columns of data all at once,
+                    #   the writeback phase cannot do a bulk store.
+                    # It has to slice the column (n) dimension into smaller chunks,
+                    #   issuing multiple TMA stores of EPI_N=64 columns each.
                     no_st = Tx.meta_var(no * EPI_N)
                     m_epi_st = m_st + wg_id * 128
                     n_epi_st = Tx.meta_var(n_st + no_st)
@@ -1708,12 +1824,38 @@ def hgemm_v10(M, N, K):
 
             # ======================================================================
             # Wrapper Functions, loop over output tiles
+            #
+            # Observe that we load two blocks of A at a time.
+            #   Each block is 128 x 64 elements.
+            #   Together, they represent a 256 x 64 slice of A for this CTA.
+            # We only load one block of B at a time, of size 64 x 256.
+            #   Both consumers will share this B block.
+            #
+            # We split the 512 x 256 cluster computation as follows:
+            #   1. CTA Split (M dimension):
+            #      - CTA 0 handles the top 256 x 256 output tile.
+            #      - CTA 1 handles the bottom 256 x 256 output tile.
+            #
+            #   2. Consumer Split within CTA (M dimension):
+            #      Because TMEM is fixed at 128 rows, we compute a 256x256 tile
+            #      by calculating two 128x256 tiles and placing them side-by-side.
+            #      - Consumer 0 (Warp 0): A[0:128, :] @ B -> TMEM cols [0:256]
+            #      - Consumer 1 (Warp 1): A[128:256, :] @ B -> TMEM cols [256:512]
             # ======================================================================
             @Tx.inline
             def tma_loader(tma_phase):
                 with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
                     while tile_scheduler.valid():
+                        # For the very first cluster tile (m_idx = 0):
+                        #   CTA 0 (cbx = 0): (0 * 2 + 0) * 256 = Row 0 (Computes rows 0 to 255)
+                        #   CTA 1 (cbx = 1): (0 * 2 + 1) * 256 = Row 256 (Computes rows 256 to 511)
+                        # For the next cluster tile (m_idx = 1):
+                        #   CTA 0 (cbx = 0): (1 * 2 + 0) * 256 = Row 512 (Computes rows 512 to 767)
+                        #   CTA 1 (cbx = 1): (1 * 2 + 1) * 256 = Row 768 (Computes rows 768 to 1023)
                         m_st = Tx.meta_var((tile_scheduler.m_idx * CTA_GROUP + cbx) * MMA_M)
+
+                        # For n_st, all consumers are always computing a 256 column result,
+                        #   so we don't need to consider cbx (CTA id in the cluster) here.
                         n_st = Tx.meta_var(tile_scheduler.n_idx * MMA_N)
 
                         tma_load(m_st, n_st, tma_phase)
@@ -1742,7 +1884,7 @@ def hgemm_v10(M, N, K):
                     tmem_to_reg(wg_id, Dreg_f16)
 
                     # Tell YOUR specific MMA warp that TMEM is free again
-                    ld2mma.arrive(wg_id, cta_id=cbx, pred=True)
+                    ld2mma.arrive(wg_id, cta_id=0, pred=True)
                     epilogue(wg_id, m_st, n_st, Dreg_f16)
 
                     tile_scheduler.next_tile()
@@ -1773,12 +1915,12 @@ def hgemm_v10(M, N, K):
                 # --- Writeback Logic ---
                 wb_phase = PipelineState("wb", 1)
                 wb_phase.init(is_producer=False)
-                # if wg_id == 0:
-                #     writeback(wg_id, wb_phase)
-                # elif wg_id == 1:
-                #     writeback(wg_id, wb_phase)
+                if wg_id == 0:
+                    writeback(wg_id, wb_phase)
+                elif wg_id == 1:
+                    writeback(wg_id, wb_phase)
 
-            # --- Cleanup ---
+            # -- Cleanup ---
             Tx.cuda.cluster_sync()
             if wg_id == 0:
                 if warp_id == 0:
