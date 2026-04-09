@@ -1,4 +1,5 @@
 ### Step 10: Multi-Consumer Warp Specialization (Final Kernel)
+# Setup
 ```python
 # TODO: 3 warpgroups, 2 consumers, 2-CTA cluster.
 # Key changes from step 9:
@@ -39,6 +40,52 @@ Now let's think about the writeback WGs.
 - WG1 handles the [256 x 256] chunk of TMEM that WG2, warp 1 MMA'd
 """
 ```
+```python
+""" 
+Hardware Mapping Setup
+CTA_GROUP=2-CTA cluster, each CTA gets WG_NUMBER=3 warpgroups.
+
+Tile Scheduling:
+  We compute the result in 256x256 tiles, 
+    so the number of m_tiles is M // MMA_M=256 // NUM_CONSUMER=2 = M // 512, 
+      since each CTA handles a 256x256 output tile, the whole cluster handles 512x256 output tiles.
+    and n_tiles is N // MMA_N=256.
+  The number of clusters is just the number of SMs used divided by the number of CTAs used per SM.
+    Here, we have SM_COUNT=2 SMs and CTA_GROUP=2-CTAs per cluster, so we just have 2 // 2 = 1 cluster.
+"""
+```
+# Shared Memory Allocation and Barrier Setup
+```python
+""" 
+Shared memory allocation
+
+We need to synchronize everything.
+  First, let's synchronize TMA and MMA in WG2.
+    We have PIPE_DEPTH=4 
+
+    mma2tma should be initialized with expected count NUM_CONSUMER=2, 
+      since both MMA consumers should be done before TMA is signaled to start loading the next B block
+      (recall that the B block that TMA loads is used by BOTH MMA consumers)
+    
+  Next, let's synchronize writeback with TMA and MMA.
+    mma2ld needs depth=NUM_CONSUMER slots, since both consumers need to signal independently
+      to LD that the MMA is done and the result needs to be written back.
+    mma2ld should be initialized with expected count 1, since each consumer acts independently
+      and writes back its own half of TMEM.
+
+    ld2mma needs NUM_CONSUMER slots too, since the writeback signals to each MMA consumer independently.
+    l2dmma should be initialized with expected count 128 * CTA_GROUP=2 = 256, since all 256 threads in
+      the cluster need to be done writing back before MMA can recompute a result
+      ... is that even true? Why can't I just do the writebacks independently? 
+      I guess that's because we re-use the single B block, so write-back is sync'd to one B block.
+
+A, B, and D blocks all have space in SMEM. 
+  We load 2 [256 x 64] A blocks since we have 2 consumers, so we need to account for that in ASmem
+  We load 1 [64 x 256] B block at each round.
+  We writeback D in chunks of size EPI_N, and again, we have 2 consumers, so we have to account for that in DSmem
+"""
+```
+
 **What you will learn:**
 - Multiple MMA warps (consumers) for higher throughput
 - Multiple writeback warpgroups
