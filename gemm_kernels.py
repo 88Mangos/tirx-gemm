@@ -1647,8 +1647,8 @@ def hgemm_v10(M, N, K):
                         mma2ld.init(1)
                         ld2mma.init(128 * CTA_GROUP)
 
-                        # accumulate both 128 x 256 subresults into TMEM of size 128 x 512
-                        Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=CTA_GROUP)
+                    # accumulate both 128 x 256 subresults into TMEM of size 128 x 512
+                    Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=CTA_GROUP)
 
             # make the barriers and TMEM init available to whole cluster
             Tx.ptx.fence.proxy_async("shared::cta")
@@ -1669,23 +1669,29 @@ def hgemm_v10(M, N, K):
 
                 else:
                     if cbx == 0:  # Only CTA 0 issues MMA
-                        # Instantiate states INSIDE this block so each warp tracks its own phase
-                        mma_phase = PipelineState("mma", PIPE_DEPTH)
-                        ld_phase = PipelineState("ld", 1)
-                        mma_phase.init(is_producer=False)
-                        ld_phase.init(is_producer=True)
                         if warp_id == 0:
+                            mma_phase = PipelineState("mma0", PIPE_DEPTH)
+                            ld_phase = PipelineState("ld0", 1)
+                            mma_phase.init(is_producer=False)
+                            ld_phase.init(is_producer=True)
                             mma_consumer(warp_id, mma_phase, ld_phase)
                         elif warp_id == 1:
+                            mma_phase = PipelineState("mma1", PIPE_DEPTH)
+                            ld_phase = PipelineState("ld1", 1)
+                            mma_phase.init(is_producer=False)
+                            ld_phase.init(is_producer=True)
                             mma_consumer(warp_id, mma_phase, ld_phase)
 
             else:
                 # --- Writeback Logic ---
-                wb_phase = PipelineState("wb", 1)
-                wb_phase.init(is_producer=False)
+
                 if wg_id == 0:
+                    wb_phase = PipelineState("wb0", 1)
+                    wb_phase.init(is_producer=False)
                     writeback(wg_id, wb_phase)
                 elif wg_id == 1:
+                    wb_phase = PipelineState("wb1", 1)
+                    wb_phase.init(is_producer=False)
                     writeback(wg_id, wb_phase)
 
             # -- Cleanup ---
