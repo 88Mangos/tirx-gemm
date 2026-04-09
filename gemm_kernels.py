@@ -1638,8 +1638,8 @@ def hgemm_v10(M, N, K):
                         mma2ld.init(1)
                         ld2mma.init(128 * CTA_GROUP)
 
-                    # accumulate both 128 x 256 subresults into TMEM of size 128 x 512
-                    Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=CTA_GROUP)
+                        # accumulate both 128 x 256 subresults into TMEM of size 128 x 512
+                        Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=CTA_GROUP)
 
             # make the barriers and TMEM init available to whole cluster
             Tx.ptx.fence.proxy_async("shared::cta")
@@ -1680,8 +1680,8 @@ def hgemm_v10(M, N, K):
                 byte_count = CTA_GROUP * (NUM_CONSUMER * BLK_M * BLK_K + BLK_N * BLK_K) * DTYPE_SIZE
                 for i in Tx.serial(NUM_CONSUMER):
                     c_m_st = i * BLK_M + m_st  # Shift the row starting index by 128 (BLK_M) for Consumer 1
-                    Tx.copy_async(Asmem[stage, i, :, :], A[c_m_st : c_m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", cta_group=CTA_GROUP, mbar=tma2mma_cta0.ptr_to([stage]))
-                Tx.copy_async(Bsmem[stage, :, :], B[n_st : n_st + BLK_N, k_st : k_st + BLK_K], dispatch="tma", cta_group=CTA_GROUP, mbar=tma2mma_cta0.ptr_to([stage]))
+                    Tx.copy_async(Asmem[stage, i, :, :], A[c_m_st : c_m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", mbar=tma2mma_cta0.ptr_to([stage]))
+                Tx.copy_async(Bsmem[stage, :, :], B[n_st : n_st + BLK_N, k_st : k_st + BLK_K], dispatch="tma", mbar=tma2mma_cta0.ptr_to([stage]))
 
                 if cbx == 0:
                     tma2mma.arrive(tma_phase.stage, byte_count)
