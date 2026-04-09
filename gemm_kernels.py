@@ -1738,11 +1738,13 @@ def hgemm_v10(M, N, K):
                 Slang Summary (Ctd.):
                   MMA to Writeback: I got another result for you, write my result to GMEM pls.
                 """
+                # Wait for YOUR specific writeback WG to say TMEM is free
                 ld2mma.wait(warp_id, ld_phase.phase)
 
                 for k in Tx.serial(K_TILES):
                     mma_stage(mma_phase.stage, k != 0, warp_id, mma_phase)
 
+                # Tell YOUR specific writeback WG that math is done
                 mma2ld.arrive(warp_id, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
 
             # ======================================================================
@@ -1773,7 +1775,7 @@ def hgemm_v10(M, N, K):
                         Tx.cast(Dreg_f16[no_st : no_st + TMEM_LD_N], Dreg[:])
 
             @Tx.inline
-            def epilogue(m_st, n_st, Dreg_f16):
+            def epilogue(wg_id, m_st, n_st, Dreg_f16):
                 """
                 Local Registers → SMEM, then SMEM → GMEM via TMA engine
                 Load from registers in chunks of size EPI_N in the epilogue. For each chunk:
@@ -1792,16 +1794,22 @@ def hgemm_v10(M, N, K):
                     # It has to slice the column (n) dimension into smaller chunks,
                     #   issuing multiple TMA stores of EPI_N=64 columns each.
                     no_st = Tx.meta_var(no * EPI_N)
+                    m_epi_st = m_st + wg_id * 128
                     n_epi_st = Tx.meta_var(n_st + no_st)
 
                     with Tx.thread():
-                        Tx.copy(Dsmem[thread_id, :], Dreg_f16[no_st : no_st + EPI_N])
+                        # wg_id (0 or 1) selects the consumer's slice. thread_id (0-127) selects the row.
+                        Tx.copy(Dsmem[wg_id, thread_id, :], Dreg_f16[no_st : no_st + EPI_N])
                         Tx.ptx.fence.proxy_async("shared::cta")
 
                     Tx.cuda.warpgroup_sync(10)
 
                     with Tx.thread(parent="warpgroup")[thread_id == 0]:
-                        Tx.copy_async(D[m_st : m_st + BLK_M, n_epi_st : n_epi_st + EPI_N], Dsmem[:, :], dispatch="tma")
+                        Tx.copy_async(
+                            D[m_epi_st : m_epi_st + 128, n_epi_st : n_epi_st + 64],
+                            Dsmem[wg_id, :, :],  # Grab only THIS consumer's 2D block
+                            dispatch="tma",
+                        )
                         Tx.ptx.cp_async.bulk.commit_group()
                         Tx.ptx.cp_async.bulk.wait_group(0)
 
@@ -1861,14 +1869,17 @@ def hgemm_v10(M, N, K):
                     m_st = Tx.meta_var((tile_scheduler.m_idx * CTA_GROUP + cbx) * MMA_M)
                     n_st = Tx.meta_var(tile_scheduler.n_idx * MMA_N)
 
+                    # Wait for YOUR specific MMA warp to finish math
                     mma2ld.wait(wg_id, wb_phase.phase)
                     wb_phase.move_to_next_stage()
                     Tx.ptx.tcgen05.fence.after_thread_sync()
 
                     Dreg_f16 = Tx.alloc_local((MMA_N,), d_type)
                     tmem_to_reg(Dreg_f16)
+
+                    # Tell YOUR specific MMA warp that TMEM is free again
                     ld2mma.arrive(wg_id, cta_id=0, pred=True)
-                    epilogue(m_st, n_st, Dreg_f16)
+                    epilogue(wg_id, m_st, n_st, Dreg_f16)
 
                     tile_scheduler.next_tile()
 

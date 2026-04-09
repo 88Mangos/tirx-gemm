@@ -1,0 +1,1961 @@
+========================================
+Modal run output - Started at Wed Apr  8 21:57:30 EDT 2026
+Steps: 10
+========================================
+Running: modal run run_modal.py --step 10
+
+✓ Initialized. View run at https://modal.com/apps/tylery/main/ap-GGVUD7rmtsAOyHxo53vVKn
+✓ Created objects.
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm/run_modal.py
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm
+├── 🔨 Created function run_tests.
+└── 🔨 Created function run_inspect.
+Running step 10: tests/test_step10.py
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 13.0.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace
+configfile: pyproject.toml
+[01:57:50] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[01:57:50] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[01:57:50] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[01:57:50] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[01:57:50] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[01:57:50] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+collecting ... collected 4 items
+
+tests/test_step10.py::test_multi_consumer[1024] FAILED
+tests/test_step10.py::test_multi_consumer[2048] FAILED
+tests/test_step10.py::test_multi_consumer[4096] FAILED
+tests/test_step10.py::test_multi_consumer[8192] FAILED
+
+=================================== FAILURES ===================================
+__________________________ test_multi_consumer[1024] ___________________________
+
+size = 1024
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_multi_consumer(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v10(M, N, K)
+        A, B, C = prepare_data(M, N, K)
+>       C_tir = compile_and_run(kernel, A, B, C)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_step10.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+utils.py:26: in compile_and_run
+    ex = tvm.compile(mod, target=target, tir_pipeline="tirx")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/driver/build_module.py:111: in compile
+    lib = tvm.tir.build(mod, target, pipeline=tir_pipeline)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/tir/build.py:227: in build
+    mod = pipeline(mod)
+          ^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/ir/transform.py:169: in __call__
+    return _ffi_transform_api.RunPass(self, mod)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+python/tvm_ffi/cython/function.pxi:929: in tvm_ffi.core.Function.__call__
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::ModulePassNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+python/tvm_ffi/cython/function.pxi:1083: in tvm_ffi.core.tvm_ffi_callback
+    ???
+/usr/local/lib/python3.12/site-packages/tvm/tir/pipeline.py:164: in _pipeline
+    mod = tvm.ir.transform.Sequential(passes)(mod)
+/usr/local/lib/python3.12/site-packages/tvm/ir/transform.py:169: in __call__
+    return _ffi_transform_api.RunPass(self, mod)
+python/tvm_ffi/cython/function.pxi:929: in tvm_ffi.core.Function.__call__
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::SequentialNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::SequentialNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::tir::transform::PrimFuncPassNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#16}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::ExecScopeStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#3}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::IfThenElseNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#3}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::IfThenElseNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#5}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::WhileNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#4}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::ForNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::ForNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#16}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::ExecScopeStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#17}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::tirx::OpCallNode const*)
+    ???
+python/tvm_ffi/cython/function.pxi:1083: in tvm_ffi.core.tvm_ffi_callback
+    ???
+/usr/local/lib/python3.12/site-packages/tvm/tirx/op_schedule/registry.py:59: in f_op_scheduler
+    res = run_dispatch(op_call, sctx)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   raise RuntimeError(report)
+E   RuntimeError: TIRx schedule dispatch failed: op=tirx.copy_async target=cuda
+E   +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+E   | Variant       | Error                                                                                                                                                                          |
+E   +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+E   | tma (prio=10) | rejected: validate_copy_op — not a valid copy op                                                                                                                               |
+E   |               | opcall:                                                                                                                                                                        |
+E   |               | D = T.Buffer((1024, 1024), "float16")                                                                                                                                          |
+E   |               | ts_m_idx = T.Buffer((1,), "int32", scope="local")                                                                                                                              |
+E   |               | cbx = T.int32()                                                                                                                                                                |
+E   |               | ts_n_idx = T.Buffer((1,), "int32", scope="local")                                                                                                                              |
+E   |               | no = T.int32()                                                                                                                                                                 |
+E   |               | Dsmem = T.Buffer((2, 128, 64), "float16", elem_offset=98816, scope="shared.dyn", layout=Tx.SwizzleLayout(3, 3, 3, swizzle_inner=True))                                         |
+E   |               | Tx.copy_async(D[(ts_m_idx * 2 + cbx) * 256:(ts_m_idx * 2 + cbx) * 256 + 128, ts_n_idx * 256 + no * 64:ts_n_idx * 256 + no * 64 + 64], Dsmem[0:2, 0:128, 0:64], dispatch="tma") |
+E   +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+/usr/local/lib/python3.12/site-packages/tvm/tirx/op_schedule/dispatcher.py:322: RuntimeError
+__________________________ test_multi_consumer[2048] ___________________________
+
+size = 2048
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_multi_consumer(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v10(M, N, K)
+        A, B, C = prepare_data(M, N, K)
+>       C_tir = compile_and_run(kernel, A, B, C)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_step10.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+utils.py:26: in compile_and_run
+    ex = tvm.compile(mod, target=target, tir_pipeline="tirx")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/driver/build_module.py:111: in compile
+    lib = tvm.tir.build(mod, target, pipeline=tir_pipeline)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/tir/build.py:227: in build
+    mod = pipeline(mod)
+          ^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/ir/transform.py:169: in __call__
+    return _ffi_transform_api.RunPass(self, mod)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+python/tvm_ffi/cython/function.pxi:929: in tvm_ffi.core.Function.__call__
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::ModulePassNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+python/tvm_ffi/cython/function.pxi:1083: in tvm_ffi.core.tvm_ffi_callback
+    ???
+/usr/local/lib/python3.12/site-packages/tvm/tir/pipeline.py:164: in _pipeline
+    mod = tvm.ir.transform.Sequential(passes)(mod)
+/usr/local/lib/python3.12/site-packages/tvm/ir/transform.py:169: in __call__
+    return _ffi_transform_api.RunPass(self, mod)
+python/tvm_ffi/cython/function.pxi:929: in tvm_ffi.core.Function.__call__
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::SequentialNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::SequentialNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::tir::transform::PrimFuncPassNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#16}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::ExecScopeStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#3}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::IfThenElseNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#3}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::IfThenElseNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#5}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::WhileNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#4}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::ForNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::ForNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#16}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::ExecScopeStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#17}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::tirx::OpCallNode const*)
+    ???
+python/tvm_ffi/cython/function.pxi:1083: in tvm_ffi.core.tvm_ffi_callback
+    ???
+/usr/local/lib/python3.12/site-packages/tvm/tirx/op_schedule/registry.py:59: in f_op_scheduler
+    res = run_dispatch(op_call, sctx)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   raise RuntimeError(report)
+E   RuntimeError: TIRx schedule dispatch failed: op=tirx.copy_async target=cuda
+E   +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+E   | Variant       | Error                                                                                                                                                                          |
+E   +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+E   | tma (prio=10) | rejected: validate_copy_op — not a valid copy op                                                                                                                               |
+E   |               | opcall:                                                                                                                                                                        |
+E   |               | D = T.Buffer((2048, 2048), "float16")                                                                                                                                          |
+E   |               | ts_m_idx = T.Buffer((1,), "int32", scope="local")                                                                                                                              |
+E   |               | cbx = T.int32()                                                                                                                                                                |
+E   |               | ts_n_idx = T.Buffer((1,), "int32", scope="local")                                                                                                                              |
+E   |               | no = T.int32()                                                                                                                                                                 |
+E   |               | Dsmem = T.Buffer((2, 128, 64), "float16", elem_offset=98816, scope="shared.dyn", layout=Tx.SwizzleLayout(3, 3, 3, swizzle_inner=True))                                         |
+E   |               | Tx.copy_async(D[(ts_m_idx * 2 + cbx) * 256:(ts_m_idx * 2 + cbx) * 256 + 128, ts_n_idx * 256 + no * 64:ts_n_idx * 256 + no * 64 + 64], Dsmem[0:2, 0:128, 0:64], dispatch="tma") |
+E   +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+/usr/local/lib/python3.12/site-packages/tvm/tirx/op_schedule/dispatcher.py:322: RuntimeError
+__________________________ test_multi_consumer[4096] ___________________________
+
+size = 4096
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_multi_consumer(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v10(M, N, K)
+        A, B, C = prepare_data(M, N, K)
+>       C_tir = compile_and_run(kernel, A, B, C)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_step10.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+utils.py:26: in compile_and_run
+    ex = tvm.compile(mod, target=target, tir_pipeline="tirx")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/driver/build_module.py:111: in compile
+    lib = tvm.tir.build(mod, target, pipeline=tir_pipeline)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/tir/build.py:227: in build
+    mod = pipeline(mod)
+          ^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/ir/transform.py:169: in __call__
+    return _ffi_transform_api.RunPass(self, mod)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+python/tvm_ffi/cython/function.pxi:929: in tvm_ffi.core.Function.__call__
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::ModulePassNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+python/tvm_ffi/cython/function.pxi:1083: in tvm_ffi.core.tvm_ffi_callback
+    ???
+/usr/local/lib/python3.12/site-packages/tvm/tir/pipeline.py:164: in _pipeline
+    mod = tvm.ir.transform.Sequential(passes)(mod)
+/usr/local/lib/python3.12/site-packages/tvm/ir/transform.py:169: in __call__
+    return _ffi_transform_api.RunPass(self, mod)
+python/tvm_ffi/cython/function.pxi:929: in tvm_ffi.core.Function.__call__
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::SequentialNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::SequentialNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::tir::transform::PrimFuncPassNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#16}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::ExecScopeStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#3}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::IfThenElseNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#3}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::IfThenElseNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#5}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::WhileNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#4}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::ForNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::ForNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#16}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::ExecScopeStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#17}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::tirx::OpCallNode const*)
+    ???
+python/tvm_ffi/cython/function.pxi:1083: in tvm_ffi.core.tvm_ffi_callback
+    ???
+/usr/local/lib/python3.12/site-packages/tvm/tirx/op_schedule/registry.py:59: in f_op_scheduler
+    res = run_dispatch(op_call, sctx)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   raise RuntimeError(report)
+E   RuntimeError: TIRx schedule dispatch failed: op=tirx.copy_async target=cuda
+E   +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+E   | Variant       | Error                                                                                                                                                                          |
+E   +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+E   | tma (prio=10) | rejected: validate_copy_op — not a valid copy op                                                                                                                               |
+E   |               | opcall:                                                                                                                                                                        |
+E   |               | D = T.Buffer((4096, 4096), "float16")                                                                                                                                          |
+E   |               | ts_m_idx = T.Buffer((1,), "int32", scope="local")                                                                                                                              |
+E   |               | cbx = T.int32()                                                                                                                                                                |
+E   |               | ts_n_idx = T.Buffer((1,), "int32", scope="local")                                                                                                                              |
+E   |               | no = T.int32()                                                                                                                                                                 |
+E   |               | Dsmem = T.Buffer((2, 128, 64), "float16", elem_offset=98816, scope="shared.dyn", layout=Tx.SwizzleLayout(3, 3, 3, swizzle_inner=True))                                         |
+E   |               | Tx.copy_async(D[(ts_m_idx * 2 + cbx) * 256:(ts_m_idx * 2 + cbx) * 256 + 128, ts_n_idx * 256 + no * 64:ts_n_idx * 256 + no * 64 + 64], Dsmem[0:2, 0:128, 0:64], dispatch="tma") |
+E   +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+/usr/local/lib/python3.12/site-packages/tvm/tirx/op_schedule/dispatcher.py:322: RuntimeError
+__________________________ test_multi_consumer[8192] ___________________________
+
+size = 8192
+
+    @pytest.mark.parametrize("size", [1024, 2048, 4096, 8192])
+    def test_multi_consumer(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v10(M, N, K)
+        A, B, C = prepare_data(M, N, K)
+>       C_tir = compile_and_run(kernel, A, B, C)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_step10.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+utils.py:26: in compile_and_run
+    ex = tvm.compile(mod, target=target, tir_pipeline="tirx")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/driver/build_module.py:111: in compile
+    lib = tvm.tir.build(mod, target, pipeline=tir_pipeline)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/tir/build.py:227: in build
+    mod = pipeline(mod)
+          ^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/tvm/ir/transform.py:169: in __call__
+    return _ffi_transform_api.RunPass(self, mod)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+python/tvm_ffi/cython/function.pxi:929: in tvm_ffi.core.Function.__call__
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::ModulePassNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+python/tvm_ffi/cython/function.pxi:1083: in tvm_ffi.core.tvm_ffi_callback
+    ???
+/usr/local/lib/python3.12/site-packages/tvm/tir/pipeline.py:164: in _pipeline
+    mod = tvm.ir.transform.Sequential(passes)(mod)
+/usr/local/lib/python3.12/site-packages/tvm/ir/transform.py:169: in __call__
+    return _ffi_transform_api.RunPass(self, mod)
+python/tvm_ffi/cython/function.pxi:929: in tvm_ffi.core.Function.__call__
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::SequentialNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::SequentialNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::transform::Pass::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::tir::transform::PrimFuncPassNode::operator()(tvm::IRModule, tvm::transform::PassContext const&) const
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#16}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::ExecScopeStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#2}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::AttrStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#1}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::LetStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#9}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::DeclBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#3}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::IfThenElseNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#3}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::IfThenElseNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#5}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::WhileNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#18}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::AllocBufferNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#4}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::ForNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::ForNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#16}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::ExecScopeStmtNode const*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#11}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt_(tvm::tir::SeqStmtNode const*)
+    ???
+<unknown>:0: in tvm::ffi::ObjectPtr<tvm::ffi::Object> tvm::ffi::Array<tvm::tir::Stmt, void>::MapHelper<tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1}, tvm::tir::Stmt>(tvm::ffi::ObjectPtr<tvm::ffi::Object>, tvm::tir::StmtMutator::Internal::Mutate(tvm::tir::StmtMutator*, tvm::ffi::Array<tvm::tir::Stmt, void> const&)::{lambda(tvm::tir::Stmt const&)#1})
+    ???
+<unknown>:0: in tvm::tir::StmtMutator::VisitStmt(tvm::tir::Stmt const&)
+    ???
+<unknown>:0: in tvm::NodeFunctor<tvm::tir::Stmt (tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)>::operator()(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*) const
+    ???
+<unknown>:0: in tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>::InitVTable()::{lambda(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)#17}::_FUN(tvm::ffi::ObjectRef const&, tvm::tir::StmtFunctor<tvm::tir::Stmt (tvm::tir::Stmt const&)>*)
+    ???
+<unknown>:0: in tvm::tir::TIRxOpScheduler::VisitStmt_(tvm::tir::tirx::OpCallNode const*)
+    ???
+python/tvm_ffi/cython/function.pxi:1083: in tvm_ffi.core.tvm_ffi_callback
+    ???
+/usr/local/lib/python3.12/site-packages/tvm/tirx/op_schedule/registry.py:59: in f_op_scheduler
+    res = run_dispatch(op_call, sctx)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   raise RuntimeError(report)
+E   RuntimeError: TIRx schedule dispatch failed: op=tirx.copy_async target=cuda
+E   +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+E   | Variant       | Error                                                                                                                                                                          |
+E   +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+E   | tma (prio=10) | rejected: validate_copy_op — not a valid copy op                                                                                                                               |
+E   |               | opcall:                                                                                                                                                                        |
+E   |               | D = T.Buffer((8192, 8192), "float16")                                                                                                                                          |
+E   |               | ts_m_idx = T.Buffer((1,), "int32", scope="local")                                                                                                                              |
+E   |               | cbx = T.int32()                                                                                                                                                                |
+E   |               | ts_n_idx = T.Buffer((1,), "int32", scope="local")                                                                                                                              |
+E   |               | no = T.int32()                                                                                                                                                                 |
+E   |               | Dsmem = T.Buffer((2, 128, 64), "float16", elem_offset=98816, scope="shared.dyn", layout=Tx.SwizzleLayout(3, 3, 3, swizzle_inner=True))                                         |
+E   |               | Tx.copy_async(D[(ts_m_idx * 2 + cbx) * 256:(ts_m_idx * 2 + cbx) * 256 + 128, ts_n_idx * 256 + no * 64:ts_n_idx * 256 + no * 64 + 64], Dsmem[0:2, 0:128, 0:64], dispatch="tma") |
+E   +---------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+/usr/local/lib/python3.12/site-packages/tvm/tirx/op_schedule/dispatcher.py:322: RuntimeError
+=========================== short test summary info ============================
+FAILED tests/test_step10.py::test_multi_consumer[1024] - RuntimeError: TIRx s...
+FAILED tests/test_step10.py::test_multi_consumer[2048] - RuntimeError: TIRx s...
+FAILED tests/test_step10.py::test_multi_consumer[4096] - RuntimeError: TIRx s...
+FAILED tests/test_step10.py::test_multi_consumer[8192] - RuntimeError: TIRx s...
+============================== 4 failed in 28.72s ==============================
+  Step 10 FAILED (exit code 1)
+
+Failed steps: [10]
+Stopping app - uncaught exception raised locally: SystemExit(1).
+Runner terminated.
+
+========================================
+Run completed at Wed Apr  8 21:58:22 EDT 2026
