@@ -1755,7 +1755,7 @@ def hgemm_v10(M, N, K):
             # Both CTA_0 and CTA_1, WG0 and WG1, all threads in warpgroup together
             # ======================================================================
             @Tx.inline
-            def tmem_to_reg(Dreg_f16):
+            def tmem_to_reg(wg_id, Dreg_f16):
                 """
                 TMEM → Local Registers
                 Load from TMEM in chunks of size TMEM_LD_N. For each chunk:
@@ -1768,11 +1768,14 @@ def hgemm_v10(M, N, K):
                 """
                 for no in Tx.unroll(MMA_N // TMEM_LD_N):
                     no_st = Tx.meta_var(no * TMEM_LD_N)
+                    # Shift the TMEM read over by 256 columns for WG 1
+                    tmem_col_st = Tx.meta_var(wg_id * MMA_N + no_st)
+
                     Dreg = Tx.alloc_local((TMEM_LD_N,), acc_type)
                     Dreg_wg = Dreg.view(TMEM_LANES, TMEM_LD_N, layout=TileLayout(S[(TMEM_LANES, TMEM_LD_N) : (1 @ TLane, 1 @ TCol)]))
 
                     with Tx.warpgroup():
-                        Tx.copy(Dreg_wg[:, :], tmem[:, no_st : no_st + TMEM_LD_N])
+                        Tx.copy(Dreg_wg[:, :], tmem[:, tmem_col_st : tmem_col_st + TMEM_LD_N])
 
                     with Tx.thread():
                         Tx.cast(Dreg_f16[no_st : no_st + TMEM_LD_N], Dreg[:])
@@ -1878,7 +1881,7 @@ def hgemm_v10(M, N, K):
                     Tx.ptx.tcgen05.fence.after_thread_sync()
 
                     Dreg_f16 = Tx.alloc_local((MMA_N,), d_type)
-                    tmem_to_reg(Dreg_f16)
+                    tmem_to_reg(wg_id, Dreg_f16)
 
                     # Tell YOUR specific MMA warp that TMEM is free again
                     ld2mma.arrive(wg_id, cta_id=0, pred=True)
