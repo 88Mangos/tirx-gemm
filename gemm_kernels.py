@@ -1588,17 +1588,6 @@ def hgemm_v10(M, N, K):
                         mma2ld.init(1)
                         ld2mma.init(128 * CTA_GROUP)
 
-                        # Pre-arrive on barriers protecting initially free memory
-                        # SMEM is free for all pipeline stages:
-                        for stage in Tx.serial(PIPE_DEPTH):
-                            for _ in Tx.serial(NUM_CONSUMER):
-                                mma2tma.arrive(stage, cta_group=1, cta_mask=1)
-
-                        # TMEM is free for the first tile
-                        for i in Tx.serial(128 * CTA_GROUP):
-                            ld2mma.arrive(0, cta_id=0, pred=True)
-                            ld2mma.arrive(1, cta_id=0, pred=True)
-
                         # accumulate both 128 x 256 subresults into TMEM of size 128 x 512
                         Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=CTA_GROUP)
 
@@ -1643,7 +1632,7 @@ def hgemm_v10(M, N, K):
             def mma_stage(stage, accum, warp_id, mma_phase):
                 tma2mma.wait(stage, mma_phase.phase)
 
-                # Tx.gemm_async(tmem[:, warp_id * MMA_N : (warp_id + 1) * MMA_N], Asmem[stage, warp_id, :, :], Bsmem[stage, :, :], accum=accum, dispatch="tcgen05", cta_group=CTA_GROUP)
+                Tx.gemm_async(tmem[:, warp_id * MMA_N : (warp_id + 1) * MMA_N], Asmem[stage, warp_id, :, :], Bsmem[stage, :, :], accum=accum, dispatch="tcgen05", cta_group=CTA_GROUP)
 
                 mma2tma.arrive(stage, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
                 mma_phase.move_to_next_stage()
@@ -1773,10 +1762,10 @@ def hgemm_v10(M, N, K):
                 # --- Writeback Logic ---
                 wb_phase = PipelineState("wb", 1)
                 wb_phase.init(is_producer=False)
-                # if wg_id == 0:
-                #     writeback(wg_id, wb_phase)
-                # elif wg_id == 1:
-                #     writeback(wg_id, wb_phase)
+                if wg_id == 0:
+                    writeback(wg_id, wb_phase)
+                elif wg_id == 1:
+                    writeback(wg_id, wb_phase)
 
             # --- Cleanup ---
             Tx.cuda.cluster_sync()
