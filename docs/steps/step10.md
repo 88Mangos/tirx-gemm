@@ -96,10 +96,14 @@ A, B, and D blocks all have space in SMEM.
 - `ld2mma.init(128 * CTA_GROUP)` — each slot expects 256 arrivals (all writeback WG threads across both CTAs)
 
 
-# TMA Load
+# Producer Logic
+
+Recall that in this 2-CTA cluster, like in Step 9, CTA 0 issues the MMA instructions.
+
+## TMA Load
 - TMA loads both `Asmem[stage, 0, :, :]` and `Asmem[stage, 1, :, :]`
 
-# MMA 
+## MMA 
 - MMA warp `warp_id` selects which A block: `Asmem[stage, warp_id, :, :]`
 - MMA output offset: `tmem[:, warp_id * MMA_N : warp_id * MMA_N + MMA_N]`
 - TMA arrive bytes: `CTA_GROUP * (NUM_CONSUMER * BLK_M * BLK_K + BLK_N * BLK_K) * DTYPE_SIZE` — 2 A blocks + 1 B block per CTA
