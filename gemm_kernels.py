@@ -1611,6 +1611,88 @@ def hgemm_v10(M, N, K):
             #   - mma2tma.init(NUM_CONSUMER), mma2ld depth=NUM_CONSUMER
             #   - WG0/WG1 read from tmem offset by wg_id*MMA_N
             #   - Writeback uses per-consumer Dsmem[wg_id, ...]
-            pass
+            # --- Hardware Mapping setup ---
+            bx = Tx.cta_id([SM_COUNT], parent="kernel")
+            tile_scheduler = ClusterPersistentScheduler2D("ts", num_m_tiles=M // MMA_M // NUM_CONSUMER, num_n_tiles=N // MMA_N, l2_group_size=8, num_clusters=SM_COUNT // CTA_GROUP)
+            tile_scheduler.init(bx // CTA_GROUP)
+
+            cbx, _cby = Tx.cta_id([CTA_GROUP, 1], parent="cluster")
+            wg_id = Tx.warpgroup_id([WG_NUMBER], parent="cta")
+            warp_id = Tx.warp_id([WARPS_PER_WG], parent="warpgroup")
+            lane_id = Tx.thread_id([THREADS_PER_WARP], parent="warp")
+            thread_id = Tx.meta_var(warp_id * THREADS_PER_WARP + lane_id)
+
+            # --- Shared memory allocation ---
+            pool = Tx.PoolAllocator()
+            tmem_addr = pool.alloc((1,), "uint32")
+
+            # allocate barrier slots
+            tma2mma = TMABar(pool, PIPE_DEPTH, "tma2mma")
+            mma2tma = TCGen05Bar(pool, PIPE_DEPTH, "mma2tma")
+            mma2ld = TCGen05Bar(pool, NUM_CONSUMER, "mma2ld")
+            ld2mma = MBarrier(pool, NUM_CONSUMER, "ld2mma")
+
+            pool.move_base_to(1024)
+            Asmem = pool.alloc((PIPE_DEPTH, NUM_CONSUMER, BLK_M, BLK_K), a_type, layout=A_layout)
+            Bsmem = pool.alloc((PIPE_DEPTH, BLK_N, BLK_K), b_type, layout=B_layout)
+            Dsmem = pool.alloc((NUM_CONSUMER, BLK_M, EPI_N), d_type, layout=D_layout)
+            pool.commit()
+
+            # use only one warp for barrier and TMEM init
+            if wg_id == 0:
+                if warp_id == 0:
+                    if lane_id == 0:
+                        tma2mma.init(1)
+                        mma2tma.init(NUM_CONSUMER)
+                        mma2ld.init(1)
+                        ld2mma.init(128 * CTA_GROUP)
+
+                        # accumulate both 128 x 256 subresults into TMEM of size 128 x 512
+                        Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=CTA_GROUP)
+
+            # make the barriers and TMEM init available to whole cluster
+            Tx.ptx.fence.proxy_async("shared::cta")
+            Tx.ptx.fence.mbarrier_init()
+            Tx.cuda.cluster_sync()
+
+            tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
+
+            # ======================================================================
+            # Main Execution
+            # 3 warpgroups, 2 consumers, 2-CTA cluster
+            # ======================================================================
+            if wg_id == 2:
+                if warp_id == 3:
+                    tma_phase = PipelineState("tma", PIPE_DEPTH)
+                    tma_phase.init(is_producer=True)
+                    tma_loader(tma_phase)
+
+                else:
+                    if cbx == 0:  # Only CTA 0 issues MMA
+                        # Instantiate states INSIDE this block so each warp tracks its own phase
+                        mma_phase = PipelineState("mma", PIPE_DEPTH)
+                        ld_phase = PipelineState("ld", 1)
+                        mma_phase.init(is_producer=False)
+                        ld_phase.init(is_producer=True)
+                        if warp_id == 0:
+                            mma_consumer(warp_id, mma_phase, ld_phase)
+                        elif warp_id == 1:
+                            mma_consumer(warp_id, mma_phase, ld_phase)
+
+            else:
+                # --- Writeback Logic ---
+                wb_phase = PipelineState("wb", 1)
+                wb_phase.init(is_producer=False)
+                if wg_id == 0:
+                    writeback(wg_id, wb_phase)
+                elif wg_id == 1:
+                    writeback(wg_id, wb_phase)
+
+            # -- Cleanup ---
+            Tx.cuda.cluster_sync()
+            if wg_id == 0:
+                if warp_id == 0:
+                    Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=CTA_GROUP)
+                    Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=CTA_GROUP)
 
     return kernel
