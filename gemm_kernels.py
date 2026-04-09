@@ -1679,7 +1679,8 @@ def hgemm_v10(M, N, K):
 
                 byte_count = CTA_GROUP * (NUM_CONSUMER * BLK_M * BLK_K + BLK_N * BLK_K) * DTYPE_SIZE
                 for i in Tx.serial(NUM_CONSUMER):
-                    Tx.copy_async(Asmem[stage, i, :, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", cta_group=CTA_GROUP, mbar=tma2mma_cta0.ptr_to([stage]))
+                    c_m_st = i * BLK_M + m_st  # Shift the row starting index by 128 (BLK_M) for Consumer 1
+                    Tx.copy_async(Asmem[stage, i, :, :], A[c_m_st : c_m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", cta_group=CTA_GROUP, mbar=tma2mma_cta0.ptr_to([stage]))
                 Tx.copy_async(Bsmem[stage, :, :], B[n_st : n_st + BLK_N, k_st : k_st + BLK_K], dispatch="tma", cta_group=CTA_GROUP, mbar=tma2mma_cta0.ptr_to([stage]))
 
                 if cbx == 0:
