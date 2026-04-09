@@ -1649,6 +1649,9 @@ def hgemm_v10(M, N, K):
             tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
 
             # --- Producer Warpgroup (WG2) ---
+
+
+
             if wg_id == 2:
                 @Tx.inline
                 def tma_load_stage(stage, k_st, m_st, n_st, warp_id):
@@ -1707,7 +1710,43 @@ def hgemm_v10(M, N, K):
                       while tile_scheduler.valid():
                           mma(warp_id)
                           tile_scheduler.next_tile()
+            # ======================================================================
+            # Main Execution
+            # 3 warpgroups, 2 consumers, 2-CTA cluster 
+            # ======================================================================
+            if wg_id == 2:
+                if warp_id == 3:
+                    # --- TMA Producer Logic ---
+                    tma_phase = PipelineState("tma", PIPE_DEPTH)
+                    tma_phase.init(is_producer=True)
+                    tma_load_logic(tma_phase)
 
+                else:
+                    if cbx == 0:  # Only CTA 0 issues MMA
+                        # --- MMA Consumer Logic ---
+                        # Instantiate states INSIDE this block so each warp tracks its own phase
+                        mma_phase = PipelineState("mma", PIPE_DEPTH)
+                        ld_phase = PipelineState("ld", 1) 
+                        mma_phase.init(is_producer=False)
+                        ld_phase.init(is_producer=True)
+                        if warp_id == 0:
+                            mma_consumer(warp_id, mma_phase, ld_phase)
+                        elif warp_id == 1:
+                            mma_consumer(warp_id, mma_phase, ld_phase)
 
+            else:
+                # --- Writeback Logic ---
+                wb_phase = PipelineState("wb", 1)
+                wb_phase.init(is_producer=False)
+                if wg_id == 0:
+                    writeback_logic(wg_id, wb_phase)
+                elif wg_id == 1:
+                    writeback_logic(wg_id, wb_phase)
+
+            # -- Cleanup --- 
+            Tx.cuda.cluster_sync()
+            if warp_id == 0:
+                Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=CTA_GROUP)
+                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=CTA_GROUP)
                     
     return kernel
