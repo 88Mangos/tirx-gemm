@@ -1620,7 +1620,7 @@ def hgemm_v10(M, N, K):
             # allocate barrier slots
             tma2mma = TMABar(pool, PIPE_DEPTH, "tma2mma")
             mma2tma = TCGen05Bar(pool, PIPE_DEPTH, "mma2tma")
-            mma2ld = TCGen05Bar(pool, NUM_CONSUMER, "mma2tma")
+            mma2ld = TCGen05Bar(pool, NUM_CONSUMER, "mma2ld")
             ld2mma = MBarrier(pool, NUM_CONSUMER, "ld2mma")
 
             pool.move_base_to(1024)
@@ -1916,8 +1916,9 @@ def hgemm_v10(M, N, K):
 
             # -- Cleanup ---
             Tx.cuda.cluster_sync()
-            if warp_id == 0:
-                Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=CTA_GROUP)
-                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=CTA_GROUP)
+            if wg_id == 0:
+                if warp_id == 0:
+                    Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=CTA_GROUP)
+                    Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=CTA_GROUP)
 
     return kernel
