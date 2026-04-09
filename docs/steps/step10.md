@@ -1,5 +1,44 @@
 ### Step 10: Multi-Consumer Warp Specialization (Final Kernel)
+```python
+# TODO: 3 warpgroups, 2 consumers, 2-CTA cluster.
+# Key changes from step 9:
+#   - WG_NUMBER=3: WG2 (TMA+MMA), WG0+WG1 (writeback)
+#   - NUM_CONSUMER=2 MMA warps (warp0, warp1 in WG2)
+#   - Each MMA warp handles tmem[:, warp_id*MMA_N : warp_id*MMA_N+MMA_N]
+#   - TMA loads NUM_CONSUMER A blocks per stage
+#   - mma2tma.init(NUM_CONSUMER), mma2ld depth=NUM_CONSUMER
+#   - WG0/WG1 read from tmem offset by wg_id*MMA_N
+#   - Writeback uses per-consumer Dsmem[wg_id, ...]
 
+# --- Hardware Mapping setup  ---
+""" 
+Given a cluster containing CTA_GROUP=2 CTAs (SMs), which have distributed SMEM,
+now the CTAs can also cooperate within the cluster to increase arithmetic intensity.
+
+In both CTA_0 and CTA_1, we consider WG_NUMBER=3 warpgroups.
+- WG0 and WG1 are used for writeback
+- WG2 is used for TMA loading and MMA 
+
+In each warpgroup, there are 4 warps. 
+
+Let's look at warpgroup 2 first.
+- warp 0 and warp 1 are MMA consumers. 
+  Warp 0 writes to the first 256 cols of TMEM
+  Warp 1 writes to the latter 256 cols of TMEM
+  Since TMEM always has 128 lanes, our 256 x 256 result tile is stored as 
+  two 128 x 256 tiles side by side, leading to TMEM of 128 x 512,
+  i.e., 512 TMEM cols to writeback.
+- warp 3 is a TMA producer, which loads 2 A blocks and 1 B block per stage.
+  Each block is size 256 x 64.
+  Basically, to fill in a 256 x 512 result tile,
+  We can do A_tile_0[256 x 64] @ B_tile[64 x 256] in warp 0 -> [256 x 256]
+  We can do A_tile_1[256 x 64] @ B_tile[64 x 256] in warp 1 -> [256 x 256]
+
+Now let's think about the writeback WGs.
+- WG0 handles the [256 x 256] chunk of TMEM that WG2, warp 0 MMA'd
+- WG1 handles the [256 x 256] chunk of TMEM that WG2, warp 1 MMA'd
+"""
+```
 **What you will learn:**
 - Multiple MMA warps (consumers) for higher throughput
 - Multiple writeback warpgroups

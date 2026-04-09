@@ -1602,46 +1602,20 @@ def hgemm_v10(M, N, K):
         D: Tx.Buffer((M, N), d_type),
     ):
         with Tx.kernel():
-            # TODO: 3 warpgroups, 2 consumers, 2-CTA cluster.
-            # Key changes from step 9:
-            #   - WG_NUMBER=3: WG2 (TMA+MMA), WG0+WG1 (writeback)
-            #   - NUM_CONSUMER=2 MMA warps (warp0, warp1 in WG2)
-            #   - Each MMA warp handles tmem[:, warp_id*MMA_N : warp_id*MMA_N+MMA_N]
-            #   - TMA loads NUM_CONSUMER A blocks per stage
-            #   - mma2tma.init(NUM_CONSUMER), mma2ld depth=NUM_CONSUMER
-            #   - WG0/WG1 read from tmem offset by wg_id*MMA_N
-            #   - Writeback uses per-consumer Dsmem[wg_id, ...]
-
-            # --- Hardware Mapping setup  ---
             """ 
-            Given a cluster containing CTA_GROUP=2 CTAs (SMs), which have distributed SMEM,
-            now the CTAs can also cooperate within the cluster to increase arithmetic intensity.
+            Hardware Mapping Setup
+            CTA_GROUP=2-CTA cluster, each CTA gets WG_NUMBER=3 warpgroups.
 
-            In both CTA_0 and CTA_1, we consider WG_NUMBER=3 warpgroups.
-            - WG0 and WG1 are used for writeback
-            - WG2 is used for TMA loading and MMA 
-            
-            In each warpgroup, there are 4 warps. 
-
-            Let's look at warpgroup 2 first.
-            - warp 0 and warp 1 are MMA consumers. 
-              Warp 0 writes to the first 256 cols of TMEM
-              Warp 1 writes to the latter 256 cols of TMEM
-              Since TMEM always has 128 lanes, this gives us 128 x 512 TMEM cols to writeback.
-            - warp 3 is a TMA producer, which loads 2 A blocks and 1 B block per stage.
-              Each block is size 128 x 64.
-              Basically, to fill in a 128 x 512 result tile,
-              We can do A_tile_0[128 x 64] @ B_tile[64 x 256] in warp 0 -> [128 x 256]
-              We can do A_tile_1[128 x 64] @ B_tile[64 x 256] in warp 1 -> [128 x 256]
-
-            Now let's think about the writeback WGs.
-            - WG0 handles the [128 x 256] chunk of TMEM that WG2, warp 0 MMA'd
-            - WG1 handles the [128 x 256] chunk of TMEM that WG2, warp 1 MMA'd
+            Tile Scheduling:
+              We compute the result in 256x256 tiles, 
+                so the number of m_tiles is M // MMA_M=256 // NUM_CONSUMER=2 = M // 512, 
+                  since each CTA handles a 256x256 output tile, the whole cluster handles 512x256 output tiles.
+                and n_tiles is N // MMA_N=256.
+              The number of clusters is just the number of SMs used divided by the number of CTAs used per SM.
+                Here, we have SM_COUNT=2 SMs and CTA_GROUP=2-CTAs per cluster, so we just have 2 // 2 = 1 cluster.
             """
-            # NOTE: since the cluster is CTA_GROUP=2 by 1, cby=0 always, so ignore cby
-            cbx, _cby = Tx.cta_id([CTA_GROUP, 1], parent="cluster")  # cluster CTA ID - position within the cluster
-            bx = Tx.cta_id([SM_COUNT], parent="kernel")  # kernel CTA ID - which SM (CTA)
-
+            bx = Tx.cta_id([SM_COUNT], parent="kernel")
+            cbx, _cby = Tx.cta_id([CTA_GROUP, 1], parent="cluster")
             wg_id = Tx.warpgroup_id([WG_NUMBER], parent="cta")
             warp_id = Tx.warp_id([WARPS_PER_WG], parent="warpgroup")
             lane_id = Tx.thread_id([THREADS_PER_WARP], parent="warp")
@@ -1650,18 +1624,45 @@ def hgemm_v10(M, N, K):
             tile_scheduler = ClusterPersistentScheduler2D("ts", num_m_tiles=M // MMA_M, num_n_tiles=N // MMA_N, l2_group_size=8, num_clusters=SM_COUNT // CTA_GROUP)
             tile_scheduler.init(bx // CTA_GROUP)
 
-            # --- Shared memory allocation ---
+            """ 
+            Shared memory allocation
+
+            We need to synchronize everything.
+              First, let's synchronize TMA and MMA in WG2.
+                We have PIPE_DEPTH=4 
+
+                mma2tma should be initialized with expected count NUM_CONSUMER=2, 
+                  since both MMA consumers should be done before TMA is signaled to start loading the next B block
+                  (recall that the B block that TMA loads is used by BOTH MMA consumers)
+                
+              Next, let's synchronize writeback with TMA and MMA.
+                mma2ld needs depth=NUM_CONSUMER slots, since both consumers need to signal independently
+                  to LD that the MMA is done and the result needs to be written back.
+                mma2ld should be initialized with expected count 1, since each consumer acts independently
+                  and writes back its own half of TMEM.
+
+                ld2mma needs NUM_CONSUMER slots too, since the writeback signals to each MMA consumer independently.
+                l2dmma should be initialized with expected count 128 * CTA_GROUP=2 = 256, since all 256 threads in
+                  the cluster need to be done writing back before MMA can recompute a result
+                  ... is that even true? Why can't I just do the writebacks independently? 
+                  I guess that's because we re-use the single B block, so write-back is sync'd to one B block.
+
+            A, B, and D blocks all have space in SMEM. 
+              We load 2 [256 x 64] A blocks since we have 2 consumers, so we need to account for that in ASmem
+              We load 1 [64 x 256] B block at each round.
+              We writeback D in chunks of size EPI_N, and again, we have 2 consumers, so we have to account for that in DSmem
+            """
             pool = Tx.PoolAllocator()
             tmem_addr = pool.alloc((1,), "uint32")
             tma2mma = TMABar(pool, PIPE_DEPTH, "tma2mma")  # TMA tells MMA when it's done loading
             mma2tma = TCGen05Bar(pool, PIPE_DEPTH, "mma2tma")  # MMA tells MMA when it needs more data
-            mma2ld = TCGen05Bar(pool, 1, "mma2tma")  # MMA tells writeback it's done
-            ld2mma = MBarrier(pool, 1, "ld2mma")  # writeback tells MMA the SMEM is free to be used again
+            mma2ld = TCGen05Bar(pool, NUM_CONSUMER, "mma2tma")  # MMA tells writeback it's done
+            ld2mma = MBarrier(pool, NUM_CONSUMER, "ld2mma")  # writeback tells MMA the SMEM is free to be used again
 
             pool.move_base_to(1024)
-            Asmem = pool.alloc((PIPE_DEPTH, BLK_M, BLK_K), a_type, layout=A_layout)
+            Asmem = pool.alloc((PIPE_DEPTH, NUM_CONSUMER, BLK_M, BLK_K), a_type, layout=A_layout)
             Bsmem = pool.alloc((PIPE_DEPTH, BLK_N, BLK_K), b_type, layout=B_layout)
-            Dsmem = pool.alloc((BLK_M, EPI_N), d_type, layout=D_layout)
+            Dsmem = pool.alloc((NUM_CONSUMER, BLK_M, EPI_N), d_type, layout=D_layout)
             pool.commit()
 
             # --- Barrier + TMEM init (warp 0 only) ---
@@ -1669,7 +1670,7 @@ def hgemm_v10(M, N, K):
                 if warp_id == 0:
                     if lane_id == 0:
                         tma2mma.init(1)
-                        mma2tma.init(1)
+                        mma2tma.init(NUM_CONSUMER)  # needs to wait for both WG2 warp 0 and WG2 warp 1 to be done MMA
                         mma2ld.init(1)
                         # ld2mma.init(128 * CTA_GROUP) for cross-CTA writeback sync
                         ld2mma.init(128 * CTA_GROUP)  # CHANGED: was 128
@@ -1683,7 +1684,6 @@ def hgemm_v10(M, N, K):
             tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
 
             # --- TMA Producer (WG1/warp3) ---
-
 
             if wg_id == 1:
                 if warp_id == 3:
@@ -1771,8 +1771,7 @@ def hgemm_v10(M, N, K):
 
             # --- Writeback (WG0) ---
             @Tx.inline
-            
-            elif wg_id == 0:
+            def writeback(wg_id):
                 wb_phase = PipelineState("wb", 1)
                 wb_phase.init(is_producer=False)
 
