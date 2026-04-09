@@ -1650,10 +1650,14 @@ def hgemm_v10(M, N, K):
 
             # ======================================================================
             # Per-tile TMA loading
+            # Both CTA_0 and CTA_1, WG2, Warp 3
             # ======================================================================
+            tma2mma_cta0 = tma2mma.remote_view(0)
+
             @Tx.inline
-            def tma_load_stage(stage, k_st, m_st, n_st, warp_id):
-                mma2tma.wait()
+            def tma_load_stage(stage, k_st, m_st, n_st, tma_phase):
+                mma2tma.wait(stage, tma_phase.phase)
+
                 byte_count = CTA_GROUP * (NUM_CONSUMER * BLK_M * BLK_K + BLK_N * BLK_K) * DTYPE_SIZE
                 for i in Tx.serial(NUM_CONSUMER):
                     Tx.copy_async(Asmem[stage, i, :, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", cta_group=CTA_GROUP, mbar=tma2mma_cta0.ptr_to([stage]))
@@ -1661,46 +1665,77 @@ def hgemm_v10(M, N, K):
 
                 if cbx == 0:
                     tma2mma.arrive(tma_phase.stage, byte_count)
-
+                tma_phase.move_to_next_stage()
 
             @Tx.inline
-            def tma_load(m_st, n_st):
-                """
-                For each tile needed for MMA, load the tile into cluster's distributed SMEM
-                """
+            def tma_load(m_st, n_st, tma_phase):
                 for k in Tx.serial(K_TILES):
-                    tma_load_stage(tma_phase.stage, k * BLK_K, m_st, n_st)
-
+                    tma_load_stage(tma_phase.stage, k * BLK_K, m_st, n_st, tma_phase)
 
             # ======================================================================
             # Per-tile MMA dispatch (CTA 0 only)
             # ======================================================================
             @Tx.inline
-            def mma_stage(stage, accum, warp_id):
-                tma2mma.wait()
+            def mma_stage(stage, accum, warp_id, mma_phase):
+                tma2mma.wait(stage, mma_phase.phase)
+
                 Tx.gemm_async(tmem[:, warp_id * MMA_N : (warp_id + 1) * MMA_N], Asmem[stage, warp_id, :, :], Bsmem[stage, :, :], accum=accum, dispatch="tcgen05", cta_group=CTA_GROUP)
 
                 mma2tma.arrive(stage, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
-                # move to next stage of mma_phase
+                mma_phase.move_to_next_stage()
 
-            @Tx.inline 
-            def mma(warp_id):
-                ld2mma.wait() 
-                
+            @Tx.inline
+            def mma(warp_id, mma_phase, ld_phase):
+                ld2mma.wait(warp_id, ld_phase.phase)
+
                 for k in Tx.serial(K_TILES):
-                    mma_stage(, k != 0, warp_id)
-                
-                mma2ld.arrive(warp_id, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
+                    mma_stage(mma_phase.stage, k != 0, warp_id, mma_phase)
 
+                mma2ld.arrive(warp_id, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
 
             # ======================================================================
             # Per-tile writeback
             # ======================================================================
-            
+            @Tx.inline
+            def tmem_to_reg(Dreg_f16):
+                for no in Tx.unroll(MMA_N // TMEM_LD_N):
+                    no_st = Tx.meta_var(no * TMEM_LD_N)
+                    Dreg = Tx.alloc_local((TMEM_LD_N,), acc_type)  # tmp register
+                    Dreg_wg = Dreg.view(TMEM_LANES, TMEM_LD_N, layout=TileLayout(S[(TMEM_LANES, TMEM_LD_N) : (1 @ TLane, 1 @ TCol)]))
+
+                    with Tx.warpgroup():  # all threads in WG write TMEM → Reg
+                        Tx.copy(Dreg_wg[:, :], tmem[:, no_st : no_st + TMEM_LD_N])
+
+                    with Tx.thread():  # per-thread cast
+                        Tx.cast(Dreg_f16[no_st : no_st + TMEM_LD_N], Dreg[:])
+
+            @Tx.inline
+            def epilogue(m_st, n_st, Dreg_f16):
+                for no in Tx.unroll(MMA_N // EPI_N):
+                    no_st = Tx.meta_var(no * EPI_N)
+                    n_epi_st = Tx.meta_var(n_st + no_st)
+
+                    with Tx.thread():  # per-thread write EPI_N-col slice to SMEM
+                        Tx.copy(Dsmem[thread_id, :], Dreg_f16[no_st : no_st + EPI_N])
+                        Tx.ptx.fence.proxy_async("shared::cta")  # make SMEM writes visible to TMA engine
+
+                    Tx.cuda.warpgroup_sync(10)  # wait until all threads done writing SMEM
+
+                    # --- TMA Store (elected thread of warp 0) ---
+                    with Tx.thread(parent="warpgroup")[thread_id == 0]:
+                        Tx.copy_async(D[m_st : m_st + BLK_M, n_epi_st : n_epi_st + EPI_N], Dsmem[:, :], dispatch="tma")
+                        # Commit and wait for TMA store completion
+                        # NOTE: must stay in this loop to prevent SMEM overwrites in DMEM
+                        Tx.ptx.cp_async.bulk.commit_group()
+                        Tx.ptx.cp_async.bulk.wait_group(0)
+
+                    # Sync before next iteration
+                    Tx.cuda.warpgroup_sync(10)
+
             # ======================================================================
-            # Wrapper Functions, loop over output tiles 
+            # Wrapper Functions, loop over output tiles
             # ======================================================================
-            @Tx.inline 
+            @Tx.inline
             def tma_loader(tma_phase):
                 with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
                     while tile_scheduler.valid():
@@ -1708,34 +1743,34 @@ def hgemm_v10(M, N, K):
                         n_st = Tx.meta_var((tile_scheduler.n_idx * CTA_GROUP + cbx) * BLK_N)
                         tma_load(m_st, n_st, tma_phase)
                         tile_scheduler.next_tile()
-            
-            @Tx.inline 
+
+            @Tx.inline
             def mma_consumer(warp_id, mma_phase, ld_phase):
                 with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
                     while tile_scheduler.valid():
                         mma(warp_id, mma_phase, ld_phase)
                         tile_scheduler.next_tile()
 
-            @Tx.inline 
+            @Tx.inline
             def writeback(wg_id, wb_phase):
                 while tile_scheduler.valid():
                     m_st = Tx.meta_var((tile_scheduler.m_idx * CTA_GROUP + cbx) * BLK_M)
                     n_st = Tx.meta_var(tile_scheduler.n_idx * MMA_N)
 
                     mma2ld.wait(wg_id, wb_phase.phase)
-                    wb_phase.move_to_next_stage() 
-                    Tx.ptx.tcgen05.fence.after_thread_sync()  
+                    wb_phase.move_to_next_stage()
+                    Tx.ptx.tcgen05.fence.after_thread_sync()
 
                     Dreg_f16 = Tx.alloc_local((MMA_N,), d_type)
-                    move_result_to_SMEM(Dreg_f16, wb_phase)
+                    tmem_to_reg(Dreg_f16)
                     ld2mma.arrive(wg_id, cta_id=0, pred=True)
-                    epilogue(m_st, n_st, Dreg_f16, wb_phase)
+                    epilogue(m_st, n_st, Dreg_f16)
 
                     tile_scheduler.next_tile()
-              
+
             # ======================================================================
             # Main Execution
-            # 3 warpgroups, 2 consumers, 2-CTA cluster 
+            # 3 warpgroups, 2 consumers, 2-CTA cluster
             # ======================================================================
             if wg_id == 2:
                 if warp_id == 3:
@@ -1749,7 +1784,7 @@ def hgemm_v10(M, N, K):
                         # --- MMA Consumer Logic ---
                         # Instantiate states INSIDE this block so each warp tracks its own phase
                         mma_phase = PipelineState("mma", PIPE_DEPTH)
-                        ld_phase = PipelineState("ld", 1) 
+                        ld_phase = PipelineState("ld", 1)
                         mma_phase.init(is_producer=False)
                         ld_phase.init(is_producer=True)
                         if warp_id == 0:
@@ -1766,10 +1801,10 @@ def hgemm_v10(M, N, K):
                 elif wg_id == 1:
                     writeback_logic(wg_id, wb_phase)
 
-            # -- Cleanup --- 
+            # -- Cleanup ---
             Tx.cuda.cluster_sync()
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=CTA_GROUP)
                 Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=CTA_GROUP)
-                    
+
     return kernel
