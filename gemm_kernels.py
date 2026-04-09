@@ -1733,6 +1733,7 @@ def hgemm_v10(M, N, K):
                 """
                 Slang Summary:
                   Writeback to MMA: I'm done writing your results from TMEM!
+                  Move the loading phase back to a waiting stage.
 
                 then call wrapper for mma_stage, for each sub-tile in a scheduled output tile
 
@@ -1741,6 +1742,7 @@ def hgemm_v10(M, N, K):
                 """
                 # Wait for YOUR specific writeback WG to say TMEM is free
                 ld2mma.wait(warp_id, ld_phase.phase)
+                ld_phase.move_to_next_stage()
 
                 for k in Tx.serial(K_TILES):
                     mma_stage(mma_phase.stage, k != 0, warp_id, mma_phase)
