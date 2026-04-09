@@ -1,0 +1,146 @@
+========================================
+Modal run output - Started at Thu Apr  9 01:26:51 EDT 2026
+Steps: 5
+========================================
+Running: modal run run_modal.py --step 5
+
+✓ Initialized. View run at https://modal.com/apps/tylery/main/ap-cabkvka1HcjIjGVfoHNggd
+✓ Created objects.
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm/run_modal.py
+├── 🔨 Created mount /Users/tyleryang/Developer/15-442/tirx-gemm
+├── 🔨 Created function run_tests.
+└── 🔨 Created function run_inspect.
+Running step 5: tests/test_step05.py
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 13.0.0
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.1, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace
+configfile: pyproject.toml
+[05:27:05] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[05:27:05] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[05:27:05] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[05:27:05] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m2` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[05:27:05] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+[05:27:05] /workspace/tvm/src/target/llvm/llvm_instance.cc:219: Error: Using LLVM 19.1.7 with `-mcpu=apple-m1` is not valid in `-mtriple=arm64-apple-macos`, using default `-mcpu=generic`
+collecting ... collected 4 items
+
+tests/test_step05.py::test_pipeline[512] M=512, N=512, K=512: 21.41 TFLOP/S
+PASSED
+tests/test_step05.py::test_pipeline[1024] M=1024, N=1024, K=1024: 146.15 TFLOP/S
+PASSED
+tests/test_step05.py::test_pipeline[2048] M=2048, N=2048, K=2048: 384.96 TFLOP/S
+FAILED
+tests/test_step05.py::test_pipeline[4096] M=4096, N=4096, K=4096: 291.13 TFLOP/S
+FAILED
+
+=================================== FAILURES ===================================
+_____________________________ test_pipeline[2048] ______________________________
+
+size = 2048
+
+    @pytest.mark.parametrize("size", [512, 1024, 2048, 4096])
+    def test_pipeline(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v5(M, N, K)
+        A, B, C = prepare_data(M, N, K)
+        C_tir = compile_and_run(kernel, A, B, C)
+        verify(C_tir, A, B)
+>       check_timing(kernel, step=5, M=M, N=N, K=K)
+
+tests/test_step05.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+kernel = # from tvm.script import tir as T
+
+@T.prim_func(tirx=True)
+def kernel(A: T.Buffer((2048, 2048), "float16"), B: T.Buffe...warp_id == 0:
+            T.ptx.tcgen05.relinquish_alloc_permit(1)
+            T.ptx.tcgen05.dealloc(tmem_addr, 512, 1)
+step = 5, M = 2048, N = 2048, K = 2048, dtype = 'fp16', warmup = 10, repeat = 30
+
+    def check_timing(kernel, step, M, N, K, dtype="fp16", warmup=10, repeat=30):
+        """Benchmark and assert the kernel is within tolerance of reference time."""
+        avg_ms, tflops = benchmark_flops(kernel, M, N, K, dtype, warmup, repeat)
+        key = (step, M, N, K)
+        ref_ms = REFERENCE_TIMES.get(key)
+        if ref_ms is None:
+            print(f"Missing reference time for shape {key}")
+            return avg_ms, tflops
+    
+        ref_tflops = _compute_tflops(M, N, K, ref_ms)
+        min_tflops = ref_tflops / TIMING_TOLERANCE
+>       assert tflops >= min_tflops, (
+            f"Submission too slow: {tflops:.2f} TFLOP/S"
+            f"(reference {ref_tflops:.2f} TFLOP/S)"
+        )
+E       AssertionError: Submission too slow: 384.96 TFLOP/S(reference 520.60 TFLOP/S)
+
+utils.py:130: AssertionError
+_____________________________ test_pipeline[4096] ______________________________
+
+size = 4096
+
+    @pytest.mark.parametrize("size", [512, 1024, 2048, 4096])
+    def test_pipeline(size):
+        M, N, K = size, size, size
+        kernel = hgemm_v5(M, N, K)
+        A, B, C = prepare_data(M, N, K)
+        C_tir = compile_and_run(kernel, A, B, C)
+        verify(C_tir, A, B)
+>       check_timing(kernel, step=5, M=M, N=N, K=K)
+
+tests/test_step05.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+kernel = # from tvm.script import tir as T
+
+@T.prim_func(tirx=True)
+def kernel(A: T.Buffer((4096, 4096), "float16"), B: T.Buffe...warp_id == 0:
+            T.ptx.tcgen05.relinquish_alloc_permit(1)
+            T.ptx.tcgen05.dealloc(tmem_addr, 512, 1)
+step = 5, M = 4096, N = 4096, K = 4096, dtype = 'fp16', warmup = 10, repeat = 30
+
+    def check_timing(kernel, step, M, N, K, dtype="fp16", warmup=10, repeat=30):
+        """Benchmark and assert the kernel is within tolerance of reference time."""
+        avg_ms, tflops = benchmark_flops(kernel, M, N, K, dtype, warmup, repeat)
+        key = (step, M, N, K)
+        ref_ms = REFERENCE_TIMES.get(key)
+        if ref_ms is None:
+            print(f"Missing reference time for shape {key}")
+            return avg_ms, tflops
+    
+        ref_tflops = _compute_tflops(M, N, K, ref_ms)
+        min_tflops = ref_tflops / TIMING_TOLERANCE
+>       assert tflops >= min_tflops, (
+            f"Submission too slow: {tflops:.2f} TFLOP/S"
+            f"(reference {ref_tflops:.2f} TFLOP/S)"
+        )
+E       AssertionError: Submission too slow: 291.13 TFLOP/S(reference 505.29 TFLOP/S)
+
+utils.py:130: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_step05.py::test_pipeline[2048] - AssertionError: Submission...
+FAILED tests/test_step05.py::test_pipeline[4096] - AssertionError: Submission...
+========================= 2 failed, 2 passed in 15.28s =========================
+  Step 5 FAILED (exit code 1)
+
+Failed steps: [5]
+Stopping app - uncaught exception raised locally: SystemExit(1).
+
+========================================
+Run completed at Thu Apr  9 01:27:19 EDT 2026
