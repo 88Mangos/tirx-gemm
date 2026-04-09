@@ -10,7 +10,11 @@
 #   - mma2tma.init(NUM_CONSUMER), mma2ld depth=NUM_CONSUMER
 #   - WG0/WG1 read from tmem offset by wg_id*MMA_N
 #   - Writeback uses per-consumer Dsmem[wg_id, ...]
+```
+- `WG_NUMBER = 3`, `NUM_CONSUMER = 2`
+- Tile scheduler: `num_m_tiles=M // 256 // NUM_CONSUMER` — cluster tile is now 512x256
 
+```python
 # --- Hardware Mapping setup  ---
 """ 
 Given a cluster containing CTA_GROUP=2 CTAs (SMs), which have distributed SMEM,
@@ -85,6 +89,25 @@ A, B, and D blocks all have space in SMEM.
   We writeback D in chunks of size EPI_N, and again, we have 2 consumers, so we have to account for that in DSmem
 """
 ```
+- `Asmem = pool.alloc((PIPE_DEPTH, NUM_CONSUMER, BLK_M, BLK_K), ...)` — 2 A blocks per stage
+- `mma2tma.init(NUM_CONSUMER)` — each stage expects 2 arrivals (one per MMA warp)
+- `mma2ld = TCGen05Bar(pool, NUM_CONSUMER, ...)` and `ld2mma = MBarrier(pool, NUM_CONSUMER, ...)` — one shared object each with `depth=NUM_CONSUMER` (2 slots), **not** separate objects per consumer. Use `warp_id` / `wg_id` as the slot index (not `PipelineState.stage`): `mma2ld.arrive(warp_id, ...)`, `mma2ld.wait(wg_id, ...)`
+- `mma2ld.init(1)` — each slot expects 1 arrival (one MMA warp)
+- `ld2mma.init(128 * CTA_GROUP)` — each slot expects 256 arrivals (all writeback WG threads across both CTAs)
+
+
+# TMA Load
+- TMA loads both `Asmem[stage, 0, :, :]` and `Asmem[stage, 1, :, :]`
+
+# MMA 
+- MMA warp `warp_id` selects which A block: `Asmem[stage, warp_id, :, :]`
+- MMA output offset: `tmem[:, warp_id * MMA_N : warp_id * MMA_N + MMA_N]`
+- TMA arrive bytes: `CTA_GROUP * (NUM_CONSUMER * BLK_M * BLK_K + BLK_N * BLK_K) * DTYPE_SIZE` — 2 A blocks + 1 B block per CTA
+
+# Writeback 
+- Writeback WG offset: `wg_id * MMA_N`
+
+- Writeback **must** use chunked EPI_N (e.g., 64 or smaller) — reading all 256 TMEM columns at once exceeds register capacity
 
 **What you will learn:**
 - Multiple MMA warps (consumers) for higher throughput
@@ -103,20 +126,3 @@ The final optimization adds a second MMA consumer. With `NUM_CONSUMER=2` and `WG
 - **WG1**: Writeback for consumer 1 (reads TMEM `[256:512]`)
 
 This doubles the compute density per CTA: each CTA now processes a 256x256 output tile (vs 128x256 in step 9), and the cluster output becomes 512x256 (vs 256x256 in step 9).
-
-**Changes from step 9:**
-- `WG_NUMBER = 3`, `NUM_CONSUMER = 2`
-- `Asmem = pool.alloc((PIPE_DEPTH, NUM_CONSUMER, BLK_M, BLK_K), ...)` — 2 A blocks per stage
-- TMA loads both `Asmem[stage, 0, :, :]` and `Asmem[stage, 1, :, :]`
-- MMA warp `warp_id` selects which A block: `Asmem[stage, warp_id, :, :]`
-- MMA output offset: `tmem[:, warp_id * MMA_N : warp_id * MMA_N + MMA_N]`
-- Writeback WG offset: `wg_id * MMA_N`
-- `mma2tma.init(NUM_CONSUMER)` — each stage expects 2 arrivals (one per MMA warp)
-- `mma2ld = TCGen05Bar(pool, NUM_CONSUMER, ...)` and `ld2mma = MBarrier(pool, NUM_CONSUMER, ...)` — one shared object each with `depth=NUM_CONSUMER` (2 slots), **not** separate objects per consumer. Use `warp_id` / `wg_id` as the slot index (not `PipelineState.stage`): `mma2ld.arrive(warp_id, ...)`, `mma2ld.wait(wg_id, ...)`
-- `mma2ld.init(1)` — each slot expects 1 arrival (one MMA warp)
-- `ld2mma.init(128 * CTA_GROUP)` — each slot expects 256 arrivals (all writeback WG threads across both CTAs)
-- Writeback **must** use chunked EPI_N (e.g., 64 or smaller) — reading all 256 TMEM columns at once exceeds register capacity
-- Tile scheduler: `num_m_tiles=M // 256 // NUM_CONSUMER` — cluster tile is now 512x256
-- TMA arrive bytes: `CTA_GROUP * (NUM_CONSUMER * BLK_M * BLK_K + BLK_N * BLK_K) * DTYPE_SIZE` — 2 A blocks + 1 B block per CTA
-
-**Test:** `pytest tests/test_step10.py -xvs`
