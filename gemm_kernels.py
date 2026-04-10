@@ -11,13 +11,19 @@ Datapath:
 (1) TMA loads GMEM → SMEM
 (2) MMA accumulates results into TMEM, inputs from SMEM
 (3) Writeback TMEM → RF → SMEM → GMEM
+
+HACK: up until Step 7, I did not realize that there were syntactic sugars
+  for the different types of mbarriers. Past Step 7, it became useful to
+  utilize such sugars, but for steps 1-6 no such sugarings were used.
 """
 
 # MARK: Constants
 # ======================================================================
 # Hardware Constants
-# NOTE: for each step, we're allocating 512 cols of TMEM,
+# NOTE: for each step, we're allocating TMEM_COLS cols of TMEM,
 #   But the semantic organization of the TMEM changes.
+# NOTE: SMEM is limited to 48KB per SM
+# NOTE: RF is limited to 256KB per SM
 # ======================================================================
 SM_COUNT = 148  # B200
 WG_PER_CTA, WARPS_PER_WG, THREADS_PER_WARP = 1, 4, 32
@@ -92,7 +98,7 @@ def hgemm_v1(M, N, K):
             if warp_id == 0:
                 if lane_id == 0:
                     Tx.ptx.mbarrier.init(mma_bar.ptr_to([0]), 1)
-                # Allocate 512 TMEM columns. address_of() passes the address where the HW writes the TMEM base.
+                # Allocate TMEM_COLS TMEM columns. address_of() passes the address where the HW writes the TMEM base.
                 Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=TMEM_COLS, cta_group=1)
 
             # Flush shared memory writes, ensure mbarrier init is visible, then sync all threads
@@ -196,13 +202,13 @@ def hgemm_v2(M, N, K):
             if warp_id == 0:
                 if lane_id == 0:
                     Tx.ptx.mbarrier.init(mma_bar.ptr_to([0]), 1)
-                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
+                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=TMEM_COLS, cta_group=1)
 
             Tx.ptx.fence.proxy_async("shared::cta")
             Tx.ptx.fence.mbarrier_init()
             Tx.cuda.cta_sync()
 
-            tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
+            tmem = Tx.decl_buffer((TMEM_LANES, TMEM_COLS), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, TMEM_COLS) : (1 @ TLane, 1 @ TCol)]))
 
             m_st, n_st = Tx.meta_var(bx * BLK_M), Tx.meta_var(by * BLK_N)
 
@@ -251,7 +257,7 @@ def hgemm_v2(M, N, K):
             # --- TMEM cleanup ---
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
-                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=1)
+                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=TMEM_COLS, cta_group=1)
 
     return kernel
 
@@ -295,13 +301,13 @@ def hgemm_v3(M, N, K):
             if warp_id == 0:
                 if lane_id == 0:
                     Tx.ptx.mbarrier.init(mma_bar.ptr_to([0]), 1)
-                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
+                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=TMEM_COLS, cta_group=1)
 
             Tx.ptx.fence.proxy_async("shared::cta")
             Tx.ptx.fence.mbarrier_init()
             Tx.cuda.cta_sync()
 
-            tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
+            tmem = Tx.decl_buffer((TMEM_LANES, TMEM_COLS), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, TMEM_COLS) : (1 @ TLane, 1 @ TCol)]))
 
             # Use bx*BLK_M and by*BLK_N as tile offsets.
             m_st, n_st = Tx.meta_var(bx * BLK_M), Tx.meta_var(by * BLK_N)
@@ -353,7 +359,7 @@ def hgemm_v3(M, N, K):
             # --- TMEM cleanup ---
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
-                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=1)
+                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=TMEM_COLS, cta_group=1)
 
     return kernel
 
@@ -410,13 +416,13 @@ def hgemm_v4(M, N, K):
                 if lane_id == 0:
                     Tx.ptx.mbarrier.init(mma_bar.ptr_to([0]), 1)
                     Tx.ptx.mbarrier.init(tma_bar.ptr_to([0]), 1)
-                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
+                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=TMEM_COLS, cta_group=1)
 
             Tx.ptx.fence.proxy_async("shared::cta")
             Tx.ptx.fence.mbarrier_init()
             Tx.cuda.cta_sync()
 
-            tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
+            tmem = Tx.decl_buffer((TMEM_LANES, TMEM_COLS), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, TMEM_COLS) : (1 @ TLane, 1 @ TCol)]))
 
             m_st, n_st = Tx.meta_var(bx * BLK_M), Tx.meta_var(by * BLK_N)
 
@@ -503,7 +509,7 @@ def hgemm_v4(M, N, K):
 
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
-                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=1)
+                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=TMEM_COLS, cta_group=1)
 
     return kernel
 
@@ -576,13 +582,13 @@ def hgemm_v5(M, N, K):
                     for i in range(PIPE_DEPTH):
                         Tx.ptx.mbarrier.init(tma_bar.ptr_to([i]), 1)
 
-                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
+                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=TMEM_COLS, cta_group=1)
 
             Tx.ptx.fence.proxy_async("shared::cta")
             Tx.ptx.fence.mbarrier_init()
             Tx.cuda.cta_sync()
 
-            tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
+            tmem = Tx.decl_buffer((TMEM_LANES, TMEM_COLS), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, TMEM_COLS) : (1 @ TLane, 1 @ TCol)]))
 
             m_st, n_st = Tx.meta_var(bx * BLK_M), Tx.meta_var(by * BLK_N)
 
@@ -689,7 +695,7 @@ def hgemm_v5(M, N, K):
 
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
-                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=1)
+                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=TMEM_COLS, cta_group=1)
 
     return kernel
 
@@ -758,13 +764,13 @@ def hgemm_v6(M, N, K):
                     for i in range(PIPE_DEPTH):
                         Tx.ptx.mbarrier.init(tma_bar.ptr_to([i]), 1)
 
-                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
+                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=TMEM_COLS, cta_group=1)
 
             Tx.ptx.fence.proxy_async("shared::cta")
             Tx.ptx.fence.mbarrier_init()
             Tx.cuda.cta_sync()
 
-            tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
+            tmem = Tx.decl_buffer((TMEM_LANES, TMEM_COLS), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, TMEM_COLS) : (1 @ TLane, 1 @ TCol)]))
 
             phase_tma: Tx.int32
             phase_mma: Tx.int32
@@ -873,7 +879,7 @@ def hgemm_v6(M, N, K):
 
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
-                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=1)
+                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=TMEM_COLS, cta_group=1)
 
     return kernel
 
@@ -939,13 +945,13 @@ def hgemm_v7(M, N, K):
                         mma2ld.init(1)
                         ld2mma.init(128)  # needs to wait for all 128 threads in WG0 to finish writeback
 
-                    Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
+                    Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=TMEM_COLS, cta_group=1)
 
             Tx.ptx.fence.proxy_async("shared::cta")
             Tx.ptx.fence.mbarrier_init()
             Tx.cuda.cta_sync()
 
-            tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
+            tmem = Tx.decl_buffer((TMEM_LANES, TMEM_COLS), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, TMEM_COLS) : (1 @ TLane, 1 @ TCol)]))
 
             # --- TMA Producer (WG1/warp3) ---
             if wg_id == 1:
@@ -1064,7 +1070,7 @@ def hgemm_v7(M, N, K):
             Tx.cuda.cta_sync()
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
-                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=1)
+                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=TMEM_COLS, cta_group=1)
 
     return kernel
 
@@ -1134,13 +1140,13 @@ def hgemm_v8(M, N, K):
                         mma2ld.init(1)
                         ld2mma.init(128)  # needs to wait for all 128 threads in WG0 to finish writeback
 
-                    Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
+                    Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=TMEM_COLS, cta_group=1)
 
             Tx.ptx.fence.proxy_async("shared::cta")
             Tx.ptx.fence.mbarrier_init()
             Tx.cuda.cta_sync()
 
-            tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
+            tmem = Tx.decl_buffer((TMEM_LANES, TMEM_COLS), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, TMEM_COLS) : (1 @ TLane, 1 @ TCol)]))
 
             # --- TMA Producer (WG1/warp3) ---
             if wg_id == 1:
@@ -1259,7 +1265,7 @@ def hgemm_v8(M, N, K):
             Tx.cuda.cta_sync()
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
-                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=1)
+                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=TMEM_COLS, cta_group=1)
 
     return kernel
 
@@ -1282,7 +1288,7 @@ def hgemm_v9(M, N, K):
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_N, BLK_K))
     D_layout = tma_shared_layout(d_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, EPI_N))
 
-    CTA_MASK = 3  # NOTE: use cta_mask=3 for TCGen05Bar.arrive (signal both CTAs)
+    CTA_MASK = 3  # NOTE: use cta_mask=CTA_MASK for TCGen05Bar.arrive (signal both CTAs)
 
     # Extend step 7 with CTA_GROUP=2 cluster.
     #   - Use cluster_sync instead of cta_sync at boundaries
@@ -1334,13 +1340,13 @@ def hgemm_v9(M, N, K):
                         # ld2mma.init(128 * CTA_GROUP) for cross-CTA writeback sync
                         ld2mma.init(128 * CTA_GROUP)  # CHANGED: was 128
 
-                    Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=CTA_GROUP)
+                    Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=TMEM_COLS, cta_group=CTA_GROUP)
 
             Tx.ptx.fence.proxy_async("shared::cta")
             Tx.ptx.fence.mbarrier_init()
             Tx.cuda.cluster_sync()
 
-            tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
+            tmem = Tx.decl_buffer((TMEM_LANES, TMEM_COLS), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, TMEM_COLS) : (1 @ TLane, 1 @ TCol)]))
 
             # --- TMA Producer (WG1/warp3) ---
             if wg_id == 1:
@@ -1507,7 +1513,7 @@ def hgemm_v9(M, N, K):
             Tx.cuda.cluster_sync()
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=CTA_GROUP)
-                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=CTA_GROUP)
+                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=TMEM_COLS, cta_group=CTA_GROUP)
 
     return kernel
 
@@ -1521,12 +1527,12 @@ def hgemm_v9(M, N, K):
 def hgemm_v10(M, N, K):
     CTA_GROUP = 2
     NUM_CONSUMER = 2
-    MMA_M, MMA_N, MMA_K = 256, 256, 16
+    MMA_M, MMA_N, _MMA_K = 256, 256, 16
     K_TILES = K // BLK_K
     PIPE_DEPTH = 4
     WG_NUMBER = 3
 
-    CLUSTER_M = NUM_CONSUMER * MMA_N  # 512
+    CLUSTER_M = NUM_CONSUMER * MMA_N  # TMEM_COLS
     CTA_M = MMA_M
     BYTE_COUNT = CTA_GROUP * (NUM_CONSUMER * BLK_M * BLK_K + BLK_N * BLK_K) * F16_BYTES
 
@@ -1534,7 +1540,7 @@ def hgemm_v10(M, N, K):
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_N, BLK_K))
     D_layout = tma_shared_layout(d_type, SwizzleMode.SWIZZLE_128B_ATOM, (NUM_CONSUMER, BLK_M, EPI_N))
 
-    CTA_MASK = 3  # NOTE: use cta_mask=3 for TCGen05Bar.arrive (signal both CTAs)
+    CTA_MASK = 3  # NOTE: use cta_mask=CTA_MASK for TCGen05Bar.arrive (signal both CTAs)
 
     @Tx.prim_func(tirx=True)
     def kernel(
@@ -1585,15 +1591,15 @@ def hgemm_v10(M, N, K):
             ld2mma.init(128 * CTA_GROUP)
             if wg_id == 2:
                 if warp_id == 0:
-                    # accumulate both 128 x 256 subresults into TMEM of size 128 x 512
-                    Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=CTA_GROUP)
+                    # accumulate both 128 x 256 subresults into TMEM of size 128 x TMEM_COLS
+                    Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=TMEM_COLS, cta_group=CTA_GROUP)
 
             # make the barriers and TMEM init available to whole cluster
             Tx.ptx.fence.proxy_async("shared::cta")
             Tx.ptx.fence.mbarrier_init()
             Tx.cuda.cluster_sync()
 
-            tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
+            tmem = Tx.decl_buffer((TMEM_LANES, TMEM_COLS), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, TMEM_COLS) : (1 @ TLane, 1 @ TCol)]))
 
             tile_scheduler = ClusterPersistentScheduler2D("ts", num_m_tiles=M // CLUSTER_M, num_n_tiles=N // MMA_N, l2_group_size=8, num_clusters=SM_COUNT // CTA_GROUP)
             tile_scheduler.init(bx // CTA_GROUP)
@@ -1613,7 +1619,7 @@ def hgemm_v10(M, N, K):
                 if warp_id == 3:
                     with Tx.thread(parent="warp")[Tx.ptx.elect_sync()]:
                         while tile_scheduler.valid():
-                            # This CTA's base row inside the 512-row cluster M tile.
+                            # This CTA's base row inside the TMEM_COLS-row cluster M tile.
                             cta_m_base = Tx.meta_var(tile_scheduler.m_idx * CLUSTER_M + cbx * CTA_M)
                             n_st = Tx.meta_var(tile_scheduler.n_idx * MMA_N + cbx * BLK_N)
                             for k in range(K_TILES):
@@ -1646,9 +1652,9 @@ def hgemm_v10(M, N, K):
                                     tma2mma.wait(stage, mma_phase.phase)
                                     Tx.ptx.tcgen05.fence.after_thread_sync()
                                     Tx.gemm_async(tmem[:, 0:MMA_N], Asmem[stage, 0, :, :], Bsmem[stage, :, :], accum=(k != 0), dispatch="tcgen05", cta_group=CTA_GROUP)
-                                    mma2tma.arrive(stage, cta_group=CTA_GROUP, cta_mask=3)
+                                    mma2tma.arrive(stage, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
                                     mma_phase.move_to_next_stage()
-                                mma2ld.arrive(0, cta_group=CTA_GROUP, cta_mask=3)
+                                mma2ld.arrive(0, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
                                 tile_scheduler.next_tile()
 
                 # MMA consumer 1: writes into tmem cols [MMA_N, 2*MMA_N).
@@ -1663,9 +1669,9 @@ def hgemm_v10(M, N, K):
                                     tma2mma.wait(stage, mma_phase.phase)
                                     Tx.ptx.tcgen05.fence.after_thread_sync()
                                     Tx.gemm_async(tmem[:, MMA_N : 2 * MMA_N], Asmem[stage, 1, :, :], Bsmem[stage, :, :], accum=(k != 0), dispatch="tcgen05", cta_group=CTA_GROUP)
-                                    mma2tma.arrive(stage, cta_group=CTA_GROUP, cta_mask=3)
+                                    mma2tma.arrive(stage, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
                                     mma_phase.move_to_next_stage()
-                                mma2ld.arrive(1, cta_group=CTA_GROUP, cta_mask=3)
+                                mma2ld.arrive(1, cta_group=CTA_GROUP, cta_mask=CTA_MASK)
                                 tile_scheduler.next_tile()
 
             # WG0 writeback: consumes mma2ld slot 0 and the first half of TMEM.
@@ -1692,10 +1698,9 @@ def hgemm_v10(M, N, K):
                     ld2mma.arrive(0, cta_id=0, pred=True)
 
                     # Per-thread SMEM store into WG0's own Dsmem slice, then TMA store.
-                    tid = Tx.meta_var(warp_id * 32 + lane_id)
                     for no in Tx.unroll(MMA_N // EPI_N):
                         with Tx.thread():
-                            Tx.copy(Dsmem[0, tid, :], Dreg_16[no * EPI_N : (no + 1) * EPI_N])
+                            Tx.copy(Dsmem[0, thread_id, :], Dreg_16[no * EPI_N : (no + 1) * EPI_N])
                             Tx.ptx.fence.proxy_async("shared::cta")
                         Tx.cuda.warpgroup_sync(10)  # WG0-private barrier (NOT 0 - collides with cta_sync)
                         with Tx.thread(parent="warpgroup")[Tx.ptx.elect_sync()]:
@@ -1719,7 +1724,7 @@ def hgemm_v10(M, N, K):
                     Dreg_16 = Tx.alloc_local((MMA_N,), d_type)
                     for no in Tx.unroll(MMA_N // TMEM_LD_N):
                         Dreg = Tx.alloc_local((TMEM_LD_N,), acc_type)
-                        Dreg_wg = Dreg.view(128, TMEM_LD_N, layout=TileLayout(S[(128, TMEM_LD_N) : (1 @ axis_tid_in_wg, 1)]))
+                        Dreg_wg = Dreg.view(TMEM_LANES, TMEM_LD_N, layout=TileLayout(S[(TMEM_LANES, TMEM_LD_N) : (1 @ axis_tid_in_wg, 1)]))
                         with Tx.warpgroup():
                             Tx.copy(Dreg_wg[:, :], tmem[:, MMA_N + no * TMEM_LD_N : MMA_N + (no + 1) * TMEM_LD_N])
                         with Tx.thread():
@@ -1727,10 +1732,9 @@ def hgemm_v10(M, N, K):
 
                     ld2mma.arrive(1, cta_id=0, pred=True)
 
-                    tid = Tx.meta_var(warp_id * 32 + lane_id)
                     for no in Tx.unroll(MMA_N // EPI_N):
                         with Tx.thread():
-                            Tx.copy(Dsmem[1, tid, :], Dreg_16[no * EPI_N : (no + 1) * EPI_N])
+                            Tx.copy(Dsmem[1, thread_id, :], Dreg_16[no * EPI_N : (no + 1) * EPI_N])
                             Tx.ptx.fence.proxy_async("shared::cta")
                         Tx.cuda.warpgroup_sync(11)  # WG1-private barrier id, distinct from WG0's 10
                         with Tx.thread(parent="warpgroup")[Tx.ptx.elect_sync()]:
@@ -1746,6 +1750,6 @@ def hgemm_v10(M, N, K):
             if wg_id == 2:
                 if warp_id == 0:
                     Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=CTA_GROUP)
-                    Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=CTA_GROUP)
+                    Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=TMEM_COLS, cta_group=CTA_GROUP)
 
     return kernel
