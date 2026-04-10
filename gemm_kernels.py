@@ -6,28 +6,54 @@ from tvm.tir.layout import TileLayout, S, TLane, TCol, tid_in_wg as axis_tid_in_
 from tvm.tirx.tile_scheduler import ClusterPersistentScheduler2D
 from tvm.tirx.pipeline import PipelineState, MBarrier, TMABar, TCGen05Bar
 
+"""
+Datapath:
+(1) TMA loads GMEM → SMEM
+(2) MMA accumulates results into TMEM, inputs from SMEM
+(3) Writeback TMEM → RF → SMEM → GMEM
+"""
 
 # MARK: Constants
 # ======================================================================
+# Hardware Constants
+# NOTE: for each step, we're allocating 512 cols of TMEM,
+#   But the semantic organization of the TMEM changes.
+# ======================================================================
+SM_COUNT = 148  # B200
+WG_PER_CTA, WARPS_PER_WG, THREADS_PER_WARP = 1, 4, 32
+THREADS_PER_WG = THREADS_PER_WARP * WARPS_PER_WG
+
+TMEM_LANES, TMEM_COLS = 128, 512
+
+# ======================================================================
 # GEMM Constants
-# All TIRx functions here solve A [M x K] @ B [K x N] -> D [M x N]
-# Loading in blocks of size 128 x 64 from A, and 64 x 128 from B.
+# NOTE: All TIRx functions here solve A [M x K] @ B [K x N] -> D [M x N]
+#   Loading in blocks of size 128 x 64 from A, and 64 x 128 from B.
+# NOTE: we choose an epilogue width of 64 from step 7's starter code,
+#   which allows us chunk the writeback from SMEM → GMEM and reduce
+#   the kernel's SMEM footprint.
+# NOTE: we choose a TMEM load width of 8 to chunk the writeback from
+#   TMEM → RF. Each SM gets 256 KB of register file, introduced in
+#   Blackwell. Since TMEM accumulates with acc_type="float32" which is
+#   4 bytes in size, we have to choose a small enough value for
+#   TMEM_LD_N that doesn't put undue register pressure on the SMs.
+#   NOTE: (from Step 7 starter code) chunking epilogue with EPI_N is
+#     Optional, can be any value that divides MMA_N (e.g., 64, 128)
+#     Same for TMEM_LD_N = 8,
+#     Optional, can be any value that divides MMA_N (e.g., 8, 16, 128)
 # ======================================================================
 a_type = tvm.DataType("float16")
 b_type = tvm.DataType("float16")
 d_type = tvm.DataType("float16")
 acc_type = tvm.DataType("float32")
 F16_BYTES = 2
+F32_BYTES = 4
+BYTE_SIZE = 8  # bits
 
 BLK_M, BLK_N, BLK_K = 128, 128, 64
 
-# ======================================================================
-# Hardware Constants
-# ======================================================================
-SM_COUNT = 148  # B200
-TMEM_LANES = 128
-WG_PER_CTA, WARPS_PER_WG, THREADS_PER_WARP = 1, 4, 32
-THREADS_PER_WG = THREADS_PER_WARP * WARPS_PER_WG
+EPI_N = 64
+TMEM_LD_N = 8
 
 
 # ======================================================================
@@ -55,7 +81,7 @@ def hgemm_v1(M, N, K):
             # --- Shared memory allocation ---
             pool = Tx.PoolAllocator()
             tmem_addr = pool.alloc((1,), "uint32")
-            mma_bar = pool.alloc((1,), "uint64", align=8)
+            mma_bar = pool.alloc((1,), "uint64", align=BYTE_SIZE)
             pool.move_base_to(1024)  # Skip to offset 1024 so data buffers don't overlap with barriers
 
             Asmem = pool.alloc((BLK_M, BLK_K), a_type, layout=A_layout)
@@ -67,7 +93,7 @@ def hgemm_v1(M, N, K):
                 if lane_id == 0:
                     Tx.ptx.mbarrier.init(mma_bar.ptr_to([0]), 1)
                 # Allocate 512 TMEM columns. address_of() passes the address where the HW writes the TMEM base.
-                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=512, cta_group=1)
+                Tx.ptx.tcgen05.alloc(Tx.address_of(tmem_addr), n_cols=TMEM_COLS, cta_group=1)
 
             # Flush shared memory writes, ensure mbarrier init is visible, then sync all threads
             Tx.ptx.fence.proxy_async("shared::cta")
@@ -75,7 +101,7 @@ def hgemm_v1(M, N, K):
             Tx.cuda.cta_sync()
 
             # Declare a logical view of the allocated TMEM (allocated_addr=0 means use the base from tcgen05.alloc)
-            tmem = Tx.decl_buffer((TMEM_LANES, 512), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, 512) : (1 @ TLane, 1 @ TCol)]))
+            tmem = Tx.decl_buffer((TMEM_LANES, TMEM_COLS), acc_type, scope="tmem", allocated_addr=0, layout=TileLayout(S[(TMEM_LANES, TMEM_COLS) : (1 @ TLane, 1 @ TCol)]))
 
             m_st = Tx.meta_var(bx * BLK_M)  # Compile-time alias for tile row offset
             n_st = Tx.meta_var(by * BLK_N)  # Compile-time alias for tile col offset
@@ -127,7 +153,7 @@ def hgemm_v1(M, N, K):
             # --- TMEM cleanup ---
             if warp_id == 0:
                 Tx.ptx.tcgen05.relinquish_alloc_permit(cta_group=1)
-                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=512, cta_group=1)
+                Tx.ptx.tcgen05.dealloc(tmem_addr[0], n_cols=TMEM_COLS, cta_group=1)
 
     return kernel
 
@@ -159,7 +185,7 @@ def hgemm_v2(M, N, K):
             # --- Shared memory allocation ---
             pool = Tx.PoolAllocator()
             tmem_addr = pool.alloc((1,), "uint32")
-            mma_bar = pool.alloc((1,), "uint64", align=8)
+            mma_bar = pool.alloc((1,), "uint64", align=BYTE_SIZE)
             pool.move_base_to(1024)
 
             Asmem = pool.alloc((BLK_M, BLK_K), a_type, layout=A_layout)
@@ -259,7 +285,7 @@ def hgemm_v3(M, N, K):
             # --- Shared memory allocation ---
             pool = Tx.PoolAllocator()
             tmem_addr = pool.alloc((1,), "uint32")
-            mma_bar = pool.alloc((1,), "uint64", align=8)
+            mma_bar = pool.alloc((1,), "uint64", align=BYTE_SIZE)
             pool.move_base_to(1024)
 
             Asmem = pool.alloc((BLK_M, BLK_K), a_type, layout=A_layout)
@@ -339,25 +365,8 @@ def hgemm_v3(M, N, K):
 # ======================================================================
 # MARK: Step 4
 def hgemm_v4(M, N, K):
-
     K_TILES = K // BLK_K
-
-    """ 
-    MMA_N     : output tile width 
-    EPI_N     : epilogue width. This is a TMA Store Constraint. 
-                Why 64? Blackwell's TMA engine and SMEM layouts (like SWIZZLE_128B_ATOM) often perform best when writing back data in specific power-of-two widths.
-                In your code, you process the 128-wide tile in two 64-column "slices" to fit into the Dsmem buffer you allocated. 
-                It prevents you from needing a massive 128x128 SMEM buffer for the output, saving shared memory.
-    TMEM_LD   : Register Load Width. This is the Thread-Level Granularity.
-                When moving data TMEM → Registers, the warpgroup (128 threads) reads a small "strip" of columns.
-                8 is chosen because each thread can easily hold 8 float32 values in its local registers (Dreg = Tx.alloc_local((8,), "float32")).
-                If you increased this to 16, each thread would need more registers, potentially hitting "Register Pressure" limits which slows down the GPU.
-    """
     MMA_N = BLK_N
-
-    # NOTE: taken from hgemm_v7 starter code comments
-    EPI_N = 64  # Optional, can be any value that divides MMA_N (e.g., 64, 128)
-    TMEM_LD_N = 8  # Optional, can be any value that divides MMA_N (e.g., 8, 16, 128)
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_N, BLK_K))
@@ -379,8 +388,8 @@ def hgemm_v4(M, N, K):
             # --- Shared memory allocation ---
             pool = Tx.PoolAllocator()
             tmem_addr = pool.alloc((1,), "uint32")
-            tma_bar = pool.alloc((1,), "uint64", align=8)
-            mma_bar = pool.alloc((1,), "uint64", align=8)
+            tma_bar = pool.alloc((1,), "uint64", align=BYTE_SIZE)
+            mma_bar = pool.alloc((1,), "uint64", align=BYTE_SIZE)
 
             pool.move_base_to(1024)
             Asmem = pool.alloc((BLK_M, BLK_K), a_type, layout=A_layout)
@@ -518,10 +527,6 @@ def hgemm_v5(M, N, K):
     #   If you tried to prefetch 3 tiles into 2 buffers, the hardware wouldn't know which "arrival" the barrier is signaling.
     PRE_NUM = min(PIPE_DEPTH, K_TILES)
 
-    # NOTE: taken from hgemm_v7 starter code comments
-    EPI_N = 64  # Optional, can be any value that divides MMA_N (e.g., 64, 128)
-    TMEM_LD_N = 8  # Optional, can be any value that divides MMA_N (e.g., 8, 16, 128)
-
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_N, BLK_K))
     D_layout = tma_shared_layout(d_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, EPI_N))
@@ -552,8 +557,8 @@ def hgemm_v5(M, N, K):
 
             pool = Tx.PoolAllocator()
             tmem_addr = pool.alloc((1,), "uint32")
-            tma_bar = pool.alloc((PIPE_DEPTH,), "uint64", align=8)
-            mma_bar = pool.alloc((1,), "uint64", align=8)
+            tma_bar = pool.alloc((PIPE_DEPTH,), "uint64", align=BYTE_SIZE)
+            mma_bar = pool.alloc((1,), "uint64", align=BYTE_SIZE)
 
             pool.move_base_to(1024)
             Asmem = pool.alloc((PIPE_DEPTH, BLK_M, BLK_K), a_type, layout=A_layout)
@@ -702,10 +707,6 @@ def hgemm_v6(M, N, K):
 
     MMA_N = BLK_N
 
-    # NOTE: taken from hgemm_v7 starter code comments
-    EPI_N = 64  # Optional, can be any value that divides MMA_N (e.g., 64, 128)
-    TMEM_LD_N = 8  # Optional, can be any value that divides MMA_N (e.g., 8, 16, 128)
-
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_N, BLK_K))
     D_layout = tma_shared_layout(d_type, SwizzleMode.SWIZZLE_128B_ATOM, (BLK_M, EPI_N))
@@ -738,8 +739,8 @@ def hgemm_v6(M, N, K):
             # --- Shared memory allocation ---
             pool = Tx.PoolAllocator()
             tmem_addr = pool.alloc((1,), "uint32")
-            tma_bar = pool.alloc((PIPE_DEPTH,), "uint64", align=8)
-            mma_bar = pool.alloc((1,), "uint64", align=8)
+            tma_bar = pool.alloc((PIPE_DEPTH,), "uint64", align=BYTE_SIZE)
+            mma_bar = pool.alloc((1,), "uint64", align=BYTE_SIZE)
 
             pool.move_base_to(1024)
             Asmem = pool.alloc((PIPE_DEPTH, BLK_M, BLK_K), a_type, layout=A_layout)
@@ -890,8 +891,6 @@ def hgemm_v7(M, N, K):
     MMA_N = BLK_N
     K_TILES = K // BLK_K
     PIPE_DEPTH = 2
-    EPI_N = 64  # Optional, can be any value that divides MMA_N (e.g., 64, 128)
-    TMEM_LD_N = 8  # Optional, can be any value that divides MMA_N (e.g., 8, 16, 128)
     WG_NUMBER = 2
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_M, BLK_K))
@@ -1081,8 +1080,6 @@ def hgemm_v8(M, N, K):
     MMA_N = BLK_N
     K_TILES = K // BLK_K
     PIPE_DEPTH = 4
-    EPI_N = 64
-    TMEM_LD_N = 8
     WG_NUMBER = 2
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_M, BLK_K))
@@ -1279,8 +1276,6 @@ def hgemm_v9(M, N, K):
     MMA_M, MMA_N = 256, 256
     K_TILES = K // BLK_K
     PIPE_DEPTH = 4
-    EPI_N = 64
-    TMEM_LD_N = 8
     WG_NUMBER = 2
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_M, BLK_K))
@@ -1529,8 +1524,6 @@ def hgemm_v10(M, N, K):
     MMA_M, MMA_N, MMA_K = 256, 256, 16
     K_TILES = K // BLK_K
     PIPE_DEPTH = 4
-    EPI_N = 64
-    TMEM_LD_N = 8
     WG_NUMBER = 3
 
     CLUSTER_M = NUM_CONSUMER * MMA_N  # 512
