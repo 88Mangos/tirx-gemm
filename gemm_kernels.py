@@ -1,54 +1,3 @@
-"""
-Notes for Tyler (tylery):
-To keep the code readable, only comment for
-- Synchronization Rules: Explaining why a barrier is placed somewhere.
-- Hardware Mapping: Documenting thread/warp/block responsibilities.
-- Memory Layouts: High-level notes on tile sizes or swizzling.
-Words to comment with:  TODO FIXME XXX NOTE HACK BUG
-
-To avoid writing semantically meaningless code, magic numbers have been declared at the global scope.
-NOTE: [from README.md] Constants must be defined outside @Tx.prim_func.
-  Variables like EPI_N, TMEM_LD_N, MMA_N must be Python constants defined alongside BLK_M, BLK_K, etc.
-  Variables assigned inside the kernel function become TIR dynamic variables, which causes errors when used in buffer slicing.
-
-
-Glossary:
-  Acronyms:
-    GMEM/HBM    : High-Bandwidth Global Memory
-    SMEM        : Shared Memory (per-thread)
-    SM          : streaming multiprocessor
-    TMA         : tensor memory accelerator
-    CTA         : collaborative thread array
-    WG          : warpgroup
-    MMA         : matrix multiply and accumulate
-    GEMM        : general matrix multiplication
-
-  Common Variable Patterns:
-    tmem_addr   : Slot to store the TMEM base address returned by tcgen05.alloc
-    mma_bar     : mbarrier for MMA completion signaling
-    tma_bar     : mbarrier for TMA completion signaling
-    *_st        : [*] stride
-
-NOTE: [from README.md, step 4] Use @Tx.inline to define helper functions (e.g., tma_load, mma) inside the kernel.
-  These are inlined at compile time and can capture outer variables like Asmem, tma_bar, etc.
-  I use "# pyright: ignore[reportUnboundVariable]" whenever Pyright fails to capture the variable and allow it to be modified.
-
-NOTE: A common pattern seen is
-  warp_id * THREADS_PER_WARP + lane_id = thread_id
-  Recall that warpgroups have 128 threads. So to compute the thread_id,
-    warp_id from 0-3 tells us which of the 4 (WARPS_PER_WG) warps the thread belongs to
-    mult by 32 (THREADS_PER_WARP) to shift to starting position of the warp given by warp_id
-    lane_id adds the threads specific position within its assigned warp.
-
-
-TODO: refactor all the mbarriers to use the semantically correct ones instead of manual allocation.
-Will probably have to tinker with the pyi?
-
-TODO: refactor inlined functions to make semantic sense: wait -> command -> arrival queued
-
-TODO: make gemm_async use MMA_N, not BLK_N
-"""
-
 import tvm
 from tvm.script import tirx as Tx
 
@@ -62,25 +11,22 @@ from tvm.tirx.pipeline import PipelineState, MBarrier, TMABar, TCGen05Bar
 # ======================================================================
 # GEMM Constants
 # All TIRx functions here solve A [M x K] @ B [K x N] -> D [M x N]
+# Loading in blocks of size 128 x 64 from A, and 64 x 128 from B.
 # ======================================================================
 a_type = tvm.DataType("float16")
 b_type = tvm.DataType("float16")
 d_type = tvm.DataType("float16")
 acc_type = tvm.DataType("float32")
+F16_BYTES = 2
 
 BLK_M, BLK_N, BLK_K = 128, 128, 64
 
 # ======================================================================
 # Hardware Constants
 # ======================================================================
-F16_SIZE = 2
-
-# B200-specific
-SM_COUNT = 148
+SM_COUNT = 148  # B200
 TMEM_LANES = 128
-WG_PER_CTA = 1
-WARPS_PER_WG = 4
-THREADS_PER_WARP = 32
+WG_PER_CTA, WARPS_PER_WG, THREADS_PER_WARP = 1, 4, 32
 THREADS_PER_WG = THREADS_PER_WARP * WARPS_PER_WG
 
 
@@ -1336,7 +1282,6 @@ def hgemm_v9(M, N, K):
     EPI_N = 64
     TMEM_LD_N = 8
     WG_NUMBER = 2
-    DTYPE_SIZE = a_type.bits // 8
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_N, BLK_K))
@@ -1420,7 +1365,7 @@ def hgemm_v9(M, N, K):
                         """
                         mma2tma.wait(stage, tma_phase.phase)
 
-                        byte_count = CTA_GROUP * (BLK_M * BLK_K + BLK_N * BLK_K) * DTYPE_SIZE
+                        byte_count = CTA_GROUP * (BLK_M * BLK_K + BLK_N * BLK_K) * F16_BYTES
                         Tx.copy_async(Asmem[stage, :, :], A[m_st : m_st + BLK_M, k_st : k_st + BLK_K], dispatch="tma", cta_group=CTA_GROUP, mbar=tma2mma_cta0.ptr_to([stage]))
                         Tx.copy_async(Bsmem[stage, :, :], B[n_st : n_st + BLK_N, k_st : k_st + BLK_K], dispatch="tma", cta_group=CTA_GROUP, mbar=tma2mma_cta0.ptr_to([stage]))
 
@@ -1587,11 +1532,10 @@ def hgemm_v10(M, N, K):
     EPI_N = 64
     TMEM_LD_N = 8
     WG_NUMBER = 3
-    DTYPE_SIZE = a_type.bits // 8
 
     CLUSTER_M = NUM_CONSUMER * MMA_N  # 512
     CTA_M = MMA_M
-    BYTE_COUNT = CTA_GROUP * (NUM_CONSUMER * BLK_M * BLK_K + BLK_N * BLK_K) * DTYPE_SIZE
+    BYTE_COUNT = CTA_GROUP * (NUM_CONSUMER * BLK_M * BLK_K + BLK_N * BLK_K) * F16_BYTES
 
     A_layout = tma_shared_layout(a_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, NUM_CONSUMER, BLK_M, BLK_K))
     B_layout = tma_shared_layout(b_type, SwizzleMode.SWIZZLE_128B_ATOM, (PIPE_DEPTH, BLK_N, BLK_K))
